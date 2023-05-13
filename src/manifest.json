@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Chrome Extension with React & Webpack",
-  "description": "A chrome extension boilerplate built with React 17, Webpack 5, and Webpack Dev Server 4",
+  "name": "Bird bags",
+  "description": "A chrome extension for verifying crypto bags on the bird app",
   "options_page": "options.html",
   "background": { "service_worker": "background.bundle.js" },
   "action": {
@@ -14,6 +14,7 @@
   "icons": {
     "128": "icon-128.png"
   },
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "webNavigation"],
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*", "<all_urls>"],

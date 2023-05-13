@@ -1,11 +1,11 @@
 {
-  "name": "chrome-extension-boilerplate-react",
+  "name": "bird-bags",
   "version": "5.0.4",
-  "description": "A chrome extension boilerplate built with React 18, Webpack 5, and Webpack Dev Server 4",
+  "description": "A chrome extension for verifying crypto bags on the bird app",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/lxieyang/chrome-extension-boilerplate-react.git"
+    "url": "https://github.com/Joetoledano/chrome-extension-boilerplate-react.git"
   },
   "scripts": {
     "build": "node utils/build.js",
@@ -13,8 +13,11 @@
     "prettier": "prettier --write '**/*.{js,jsx,ts,tsx,json,css,scss,md}'"
   },
   "dependencies": {
+    "isomorphic-fetch": "^3.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "swr": "^2.1.5",
+    "viem": "^0.3.24"
   },
   "devDependencies": {
     "@babel/core": "^7.20.12",
@@ -23,6 +26,7 @@
     "@babel/preset-react": "^7.18.6",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
     "@types/chrome": "^0.0.202",
+    "@types/isomorphic-fetch": "^0.0.36",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.10",
     "babel-eslint": "^10.1.0",

@@ -1,0 +1,26 @@
+.balance-box {
+  width: 600px;
+  height: 80px;
+  background-color: #f5f5f7;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: start;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  transition: transform 0.3s ease-in-out;
+  font-size: small;
+  padding: 0.5rem;
+}
+
+.title-content {
+  color: black;
+  font-weight: 400;
+}
+
+.text-content {
+  color: white;
+  font-weight: 200;
+
+  flex-direction: column;
+}
