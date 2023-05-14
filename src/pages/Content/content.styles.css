@@ -1,6 +1,5 @@
 .balance-box {
-  width: 600px;
-  height: 80px;
+  min-height: max-content;
   background-color: #f5f5f7;
   border-radius: 10px;
   display: flex;
@@ -10,17 +9,105 @@
   box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
   transition: transform 0.3s ease-in-out;
   font-size: small;
-  padding: 0.5rem;
+  border-radius: 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  padding: 0 0.8rem 0rem 0rem;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  z-index: 10;
 }
 
-.title-content {
-  color: black;
-  font-weight: 400;
+.title-and-value-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: start;
+  width: 100vw;
+
+  margin-left: 1rem;
 }
 
-.text-content {
+.values-container {
+  width: 100%;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.values-container.hidden {
+  max-height: 0;
+  padding: 0;
+}
+
+.box-header {
+  display: flex;
+  position: relative;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100vw;
+  background-color: #aeaeff;
+  padding: 0.5rem 1rem;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  animation: fade-in 0.5s ease-in-out;
+}
+
+.box-header p.title-content {
+  margin-right: auto;
+}
+
+.display-button {
+  background-color: #7cffcb;
+  background-image: linear-gradient(315deg, #7cffcb 0%, #74f2ce 74%);
   color: white;
-  font-weight: 200;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  position: absolute;
+  top: 40px;
+  left: 40vw;
+  transition: background-color 0.3s ease-in-out;
+  animation: fade-in 0.5s ease-in-out;
+}
 
-  flex-direction: column;
+.display-button:hover {
+  background-color: #fff985;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #aeaeff;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
 }

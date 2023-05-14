@@ -1,131 +1,7 @@
 import { normalize } from 'viem/ens';
 import { publicClient } from '../../Client';
-import {
-  OPBalancesEndpoint,
-  OPRegisterWalletEndpoint,
-} from '../../lib/constants';
-import Transport from '../../lib/fetch';
-
-const registerWallet = async (walletAddress: string) => {
-  if (walletAddress) {
-    try {
-      const buildWalletBalanceQuery = () => {
-        return `${OPRegisterWalletEndpoint}`;
-      };
-
-      const opts = {
-        body: {
-          wallets: walletAddress,
-        },
-      };
-      const data = await Transport.sendJSON(buildWalletBalanceQuery(), opts);
-      return data;
-    } catch (e) {
-      console.error('error registering a wallet', e);
-    }
-  }
-};
-
-const fetchBalances = async (walletAddress: string) => {
-  if (walletAddress) {
-    let errorFetchingBalance = false;
-    try {
-      const buildWalletBalanceQuery = () => {
-        return `${OPBalancesEndpoint}?wallet=${walletAddress}&period=MAX`;
-      };
-      const dataFromRegisteringWallet = await registerWallet(walletAddress);
-      const data = await Transport.fetch(buildWalletBalanceQuery());
-      const walletBalance = data ? data.data : [];
-
-      const balancesByChain =
-        data && data.summary && data.summary.chain_breakdown
-          ? data.summary.chain_breakdown
-          : {};
-
-      const walletSummary = data ? data.summary : {};
-
-      const tokenAllocation =
-        data && data.summary && data.summary.allocation
-          ? data.summary.allocation
-          : [];
-
-      const devActivity =
-        data && data.summary && data.summary.developer_activity
-          ? data.summary.developer_activity
-          : [];
-
-      const currentWalletValue =
-        data && data.summary && data.summary.total_value
-          ? data.summary.total_value
-          : [];
-
-      const largestAllocation =
-        data && data.summary && data.summary.allocation_largest
-          ? data.summary.allocation_largest
-          : [];
-
-      const smallestAllocation =
-        data && data.summary && data.summary.allocation_smallest
-          ? data.summary.allocation_smallest
-          : [];
-
-      const priceWinner =
-        data && data.summary && data.summary.price_winner
-          ? data.summary.price_winner
-          : [];
-
-      const priceLoser =
-        data && data.summary && data.summary.price_loser
-          ? data.summary.price_loser
-          : [];
-
-      const protocolAllocation = walletSummary?.protocol_allocation
-        ? walletSummary?.protocol_allocation
-        : [].map((obj: any) => ({
-            allocation: (100 * obj.notional).toFixed(2),
-            value: (100 * obj.notional).toFixed(2),
-            label: obj.protocol,
-          }));
-
-      return {
-        walletBalance,
-        walletSummary,
-        tokenAllocation,
-        currentWalletValue,
-        protocolAllocation,
-        devActivity,
-        largestAllocation,
-        smallestAllocation,
-        priceWinner,
-        priceLoser,
-        balancesByChain,
-      };
-    } catch (e) {
-      errorFetchingBalance = true;
-      console.error('error fetching balances', e);
-      return {
-        errorFetchingBalance,
-      };
-    }
-  }
-  return [];
-};
-
-function extractEthAddress(inputString: string) {
-  const regex = /(\S*\.eth)/g;
-  const matches = inputString.match(regex);
-
-  if (matches && matches.length > 0) {
-    const lastMatch = matches[matches.length - 1];
-    if (inputString === lastMatch) {
-      return lastMatch;
-    } else if (/\s/.test(inputString)) {
-      return lastMatch;
-    }
-  }
-
-  return null;
-}
+import { extractEthAddress, getTwitterNameFromTweet } from '../../lib/helpers';
+import { fetchBalances } from '../../networkRequests';
 
 const getListOfTweetsOnHomePage = () => {
   if (typeof window !== 'undefined') {
@@ -140,26 +16,6 @@ const getListOfTweetsOnHomePage = () => {
 const getTwitterName = () => {
   if (document) {
     const namesWithENS = Array.from(document.querySelectorAll('span')).filter(
-      (el) => el?.innerText?.includes('.eth')
-    );
-    // using the second instance of the ens name to preserve the upper name(risky)
-    if (namesWithENS && namesWithENS.length) {
-      let nameWithENS;
-      if (namesWithENS.length > 2) {
-        nameWithENS = namesWithENS[3];
-      } else {
-        nameWithENS = namesWithENS[1];
-      }
-      if (nameWithENS) {
-        return nameWithENS;
-      }
-    }
-  }
-};
-
-const getTwitterNameFromTweet = (tweet: HTMLElement) => {
-  if (document) {
-    const namesWithENS = Array.from(tweet.querySelectorAll('span')).filter(
       (el) => el?.innerText?.includes('.eth')
     );
     // using the second instance of the ens name to preserve the upper name(risky)
@@ -196,13 +52,43 @@ const buildBox = () => {
   return boxEl;
 };
 
-const addElementsTogether = (parentEl, childEl) => {
-  if (parentEl && childEl) {
-    parentEl.appendChild(childEl);
-  }
+const setupTitleAndValueText = (
+  titleText: string,
+  valueText: string
+): HTMLDivElement => {
+  const textContainerDiv: HTMLDivElement = document.createElement('div');
+  textContainerDiv.classList.add('title-and-value-container');
+
+  const boxTitleText: HTMLParagraphElement = document.createElement('p');
+  boxTitleText.classList.add('title-content');
+  boxTitleText.textContent = titleText;
+
+  const boxText: HTMLParagraphElement = document.createElement('p');
+  boxText.classList.add('text-content');
+  boxText.textContent = valueText;
+
+  textContainerDiv.appendChild(boxTitleText);
+  textContainerDiv.appendChild(boxText);
+
+  return textContainerDiv;
 };
 
-const addBoxToName = async () => {
+const buildBoxHeader = (title: string) => {
+  const boxHeader = document.createElement('div');
+  boxHeader.classList.add('box-header');
+
+  const boxHeaderLeftIcon = document.createElement('p');
+  boxHeaderLeftIcon.textContent = '🧳';
+
+  const boxHeaderTitle = document.createElement('p');
+  boxHeaderTitle.textContent = `${title}'s Wallet Stats`;
+
+  boxHeader.appendChild(boxHeaderLeftIcon);
+  boxHeader.appendChild(boxHeaderTitle);
+  return boxHeader;
+};
+
+const addBoxToNameForProfile = async () => {
   if (document) {
     const nameWithENS = getTwitterName();
     if (
@@ -215,36 +101,83 @@ const addBoxToName = async () => {
       const ensAddress = filteredENSText
         ? await fetchAddressForENSName(filteredENSText.trim())
         : null;
-      if (ensAddress) {
+
+      if (ensAddress && filteredENSText) {
         const balancesData = await fetchBalances(ensAddress);
-        if (balancesData) {
+
+        if (
+          balancesData &&
+          balancesData.walletSummary &&
+          balancesData.walletSummary.total_value !== undefined &&
+          balancesData.walletSummary.total_unrealized_pnl !== undefined &&
+          balancesData.walletSummary.total_realized !== undefined
+        ) {
+          const { total_realized, total_unrealized_pnl, total_value } =
+            balancesData.walletSummary;
+
           const boxEl = buildBox();
 
-          const boxTitleText = document.createElement('p');
-          boxTitleText.classList.add('title-content');
+          const boxHeader = buildBoxHeader(filteredENSText);
 
-          const boxTitleTextContent = document.createTextNode('Eth Balance:');
+          const boxToggleButton = document.createElement('button');
+          const boxToggleButtonText = document.createTextNode('Display');
+          boxToggleButton.appendChild(boxToggleButtonText);
+          boxToggleButton.classList.add('display-button');
 
-          addElementsTogether(boxTitleText, boxTitleTextContent);
-          const boxText = document.createElement('p');
-          boxText.classList.add('text-content');
-          const boxTextContent = document.createTextNode(ensAddress);
-          addElementsTogether(boxText, boxTextContent);
-          // Add title text to box
-          addElementsTogether(boxEl, boxTitleText);
-          // Add content text to box
-          addElementsTogether(boxEl, boxTextContent);
-          // Add box to ENS element
-          addElementsTogether(nameWithENS, boxEl);
+          const boxValuesContainer = document.createElement('div');
+          boxValuesContainer.classList.add('values-container');
+
+          // add divs for each of the titles/vals to show
+          const walletValueDiv = setupTitleAndValueText(
+            '💰 Wallet Value:',
+            `$${total_value.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+          const walletUnrealizedPnLDiv = setupTitleAndValueText(
+            '🤑 Current unrealized PnL:',
+            `$${total_unrealized_pnl.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+          const walletRealizedPnLDiv = setupTitleAndValueText(
+            '🪙 Current Realized PnL:',
+            `$${total_realized.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+
+          boxToggleButton.addEventListener('click', () => {
+            boxValuesContainer.classList.toggle('hidden');
+            const buttonText = boxValuesContainer.classList.contains('hidden')
+              ? 'Display'
+              : 'Hide';
+            boxToggleButtonText.nodeValue = buttonText;
+          });
+
+          boxValuesContainer.appendChild(walletValueDiv);
+          boxValuesContainer.appendChild(walletUnrealizedPnLDiv);
+          boxValuesContainer.appendChild(walletRealizedPnLDiv);
+
+          boxEl.appendChild(boxHeader);
+          boxEl.appendChild(boxToggleButton);
+          boxEl.appendChild(boxValuesContainer);
+
+          nameWithENS.appendChild(boxEl);
         }
       }
     }
   }
 };
 
-const addBoxToNameForTweet = async (tweet: HTMLElement) => {
+const addBoxToNameForTweet = async (tweet: HTMLElement): Promise<void> => {
   if (document) {
+    console.log('inna document');
     const nameWithENS = getTwitterNameFromTweet(tweet);
+
     if (
       nameWithENS &&
       nameWithENS.innerText &&
@@ -255,27 +188,73 @@ const addBoxToNameForTweet = async (tweet: HTMLElement) => {
       const ensAddress = filteredENSText
         ? await fetchAddressForENSName(filteredENSText.trim())
         : null;
-      if (ensAddress) {
+      console.log('ens address', ensAddress);
+      if (ensAddress && filteredENSText) {
         const balancesData = await fetchBalances(ensAddress);
-        if (balancesData) {
+        console.log('balances', balancesData);
+
+        if (
+          balancesData &&
+          balancesData.walletSummary &&
+          balancesData.walletSummary.total_value !== undefined &&
+          balancesData.walletSummary.total_unrealized_pnl !== undefined &&
+          balancesData.walletSummary.total_realized !== undefined
+        ) {
+          const { total_realized, total_unrealized_pnl, total_value } =
+            balancesData.walletSummary;
+
           const boxEl = buildBox();
 
-          const boxTitleText = document.createElement('p');
-          boxTitleText.classList.add('title-content');
+          const boxHeader = buildBoxHeader(filteredENSText);
 
-          const boxTitleTextContent = document.createTextNode('Eth Balance:');
+          const boxToggleButton = document.createElement('button');
+          const boxToggleButtonText = document.createTextNode('Display');
+          boxToggleButton.appendChild(boxToggleButtonText);
+          boxToggleButton.classList.add('display-button');
 
-          addElementsTogether(boxTitleText, boxTitleTextContent);
-          const boxText = document.createElement('p');
-          boxText.classList.add('text-content');
-          const boxTextContent = document.createTextNode(ensAddress);
-          addElementsTogether(boxText, boxTextContent);
-          // Add title text to box
-          addElementsTogether(boxEl, boxTitleText);
-          // Add content text to box
-          addElementsTogether(boxEl, boxTextContent);
-          // Add box to ENS element
-          addElementsTogether(nameWithENS, boxEl);
+          const boxValuesContainer = document.createElement('div');
+          boxValuesContainer.classList.add('values-container');
+
+          // add divs for each of the titles/vals to show
+          const walletValueDiv = setupTitleAndValueText(
+            '💰 Wallet Value:',
+            `$${total_value.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+          const walletUnrealizedPnLDiv = setupTitleAndValueText(
+            '🤑 Current unrealized PnL:',
+            `$${total_unrealized_pnl.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+          const walletRealizedPnLDiv = setupTitleAndValueText(
+            '🪙 Current Realized PnL:',
+            `$${total_realized.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`
+          );
+
+          boxToggleButton.addEventListener('click', () => {
+            boxValuesContainer.classList.toggle('hidden');
+            const buttonText = boxValuesContainer.classList.contains('hidden')
+              ? 'Display'
+              : 'Hide';
+            boxToggleButtonText.nodeValue = buttonText;
+          });
+
+          boxValuesContainer.appendChild(walletValueDiv);
+          boxValuesContainer.appendChild(walletUnrealizedPnLDiv);
+          boxValuesContainer.appendChild(walletRealizedPnLDiv);
+
+          boxEl.appendChild(boxHeader);
+          boxEl.appendChild(boxToggleButton);
+          boxEl.appendChild(boxValuesContainer);
+
+          nameWithENS.appendChild(boxEl);
         }
       }
     }
@@ -294,49 +273,55 @@ function waitForHandleElement(interval: number, callback: () => any) {
   }, interval);
 }
 
-const addBoxToTweetOrTweets = async () => {
-  if (typeof window !== 'undefined') {
-    const currentURL = window.location.href;
-    if (currentURL.includes('twitter.com')) {
-      if (currentURL.includes('twitter.com/home')) {
-        // we add to tweets
-        const listOfTweets = getListOfTweetsOnHomePage();
-        if (listOfTweets) {
-          listOfTweets.forEach(async (tweet) => {
-            await addBoxToNameForTweet(tweet);
-          });
-        }
-      } else {
-        await addBoxToName();
-      }
-    }
+const addBoxNameToTweetsOnHomePage = async () => {
+  const listOfTweets = getListOfTweetsOnHomePage();
+  console.log('the list', listOfTweets);
+  if (listOfTweets) {
+    listOfTweets.forEach(async (tweet) => {
+      await addBoxToNameForTweet(tweet);
+    });
   }
 };
+
 // content.js
 
-// Your functions to be executed after the page loads
-chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-  if (message.action === 'on tweetah') {
-    // Perform actions in response to the URL change event
-    waitForHandleElement(100, addBoxToName);
-
-    // ... other actions you want to perform
-  }
-});
 // Event listener for DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function (event) {
   // Call your functions here
-  addBoxToName();
+  if (typeof window !== 'undefined') {
+    if (window.location.href.includes('twitter.com/home')) {
+      waitForHandleElement(100, addBoxNameToTweetsOnHomePage);
+    } else {
+      waitForHandleElement(100, addBoxToNameForProfile);
+    }
+  }
 });
 
-waitForHandleElement(100, addBoxToName);
-
+if (typeof window !== 'undefined') {
+  if (window.location.href.includes('twitter.com/home')) {
+    waitForHandleElement(100, addBoxNameToTweetsOnHomePage);
+  } else {
+    waitForHandleElement(100, addBoxToNameForProfile);
+  }
+}
 window.addEventListener('popstate', function () {
   // URL has changed
-  waitForHandleElement(100, addBoxToName);
+  if (typeof window !== 'undefined') {
+    if (window.location.href.includes('twitter.com/home')) {
+      waitForHandleElement(100, addBoxNameToTweetsOnHomePage);
+    } else {
+      waitForHandleElement(100, addBoxToNameForProfile);
+    }
+  }
 });
 
 window.addEventListener('hashchange', function () {
   // URL has changed
-  waitForHandleElement(100, addBoxToName);
+  if (typeof window !== 'undefined') {
+    if (window.location.href.includes('twitter.com/home')) {
+      waitForHandleElement(100, addBoxNameToTweetsOnHomePage);
+    } else {
+      waitForHandleElement(100, addBoxToNameForProfile);
+    }
+  }
 });
