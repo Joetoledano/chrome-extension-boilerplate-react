@@ -1,5 +1,4 @@
 import fetch from 'isomorphic-fetch';
-import { OPENPOOL_API_KEY } from '../constants';
 
 const Transport = {
   async fetch(apiPath: string, opts: any = {}, endPoint: string = '') {
@@ -7,7 +6,7 @@ const Transport = {
       const res = await fetch(apiPath, {
         ...opts,
         headers: {
-          Authorization: `Token ${OPENPOOL_API_KEY}`,
+          Authorization: `Token ${process.env.OPENPOOL_API_KEY}`,
           ...(opts.headers || {}),
         },
       });
