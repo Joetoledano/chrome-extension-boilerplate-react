@@ -24,7 +24,13 @@
   flex-direction: row;
   justify-content: start;
   width: 100vw;
-
+  color: darkblue;
+  margin-left: 1rem;
+}
+p.title-and-value-container {
+  margin-right: 1rem;
+}
+.text-content {
   margin-left: 1rem;
 }
 
@@ -67,7 +73,7 @@
   cursor: pointer;
   position: absolute;
   top: 40px;
-  left: 40vw;
+  right: 10px;
   transition: background-color 0.3s ease-in-out;
   animation: fade-in 0.5s ease-in-out;
 }
@@ -98,14 +104,15 @@
 
 .loading-container {
   display: flex;
-  justify-content: center;
+  flex-direction: row;
+  justify-content: start;
   align-items: center;
   height: 100%;
+  font-size: small;
 }
-
 .loading-spinner {
-  width: 24px;
-  height: 24px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 2px solid #aeaeff;
   border-top-color: transparent;

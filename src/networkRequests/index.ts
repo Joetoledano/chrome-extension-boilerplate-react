@@ -42,8 +42,8 @@ export const fetchBalances = async (walletAddress: string) => {
         )
       )
     ) {
-      alert('Wallet not loaded');
-      return;
+      console.log('Wallet not loaded');
+      return { loaded: false };
     }
 
     const data = await Transport.fetch(buildWalletBalanceQuery());

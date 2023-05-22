@@ -1,12 +1,12 @@
 import fetch from 'isomorphic-fetch';
-
+import { secrets } from '../../../secrets/secrets.development';
 const Transport = {
   async fetch(apiPath: string, opts: any = {}, endPoint: string = '') {
     try {
       const res = await fetch(apiPath, {
         ...opts,
         headers: {
-          Authorization: `Token ${process.env.OPENPOOL_API_KEY}`,
+          Authorization: `Token ${secrets.OPENPOOL_API_KEY}`,
           ...(opts.headers || {}),
         },
       });
