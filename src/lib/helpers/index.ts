@@ -1,3 +1,5 @@
+import { tokensData } from '../../tokensData';
+
 export function extractEthAddress(inputString: string) {
   const cleanedString = inputString.replace(/[^\w\s.]/g, ''); // Remove special characters except for word characters, spaces, and periods
   const regex = /(\S*\.eth)/g;
@@ -13,6 +15,13 @@ export function extractEthAddress(inputString: string) {
   }
 
   return null;
+}
+
+export function removeSpecialCharacters(str: string): string {
+  // This regular expression matches any character that is not a letter (case insensitive), a number, an underscore, or a whitespace.
+  let regex = /[^a-z0-9_ \n]/gi;
+  // Replace matches with an empty string.
+  return str.replace(regex, '');
 }
 
 export const getTwitterNameFromTweet = (tweet: HTMLElement) => {
@@ -88,3 +97,25 @@ export function addToggleButton(parentContainer: HTMLElement) {
     return boxToggleButton;
   }
 }
+
+type tokenDataObjType = {
+  id: string;
+  name: string;
+  symbol: string;
+};
+
+export const getTokensDataObjectByName = () => {
+  let dataObject = tokensData.reduce((obj: any, item: tokenDataObjType) => {
+    obj[item.name] = item;
+    return obj;
+  }, {});
+  return dataObject;
+};
+
+export const getTokensDataObjectBySymbol = () => {
+  let dataObject = tokensData.reduce((obj: any, item: tokenDataObjType) => {
+    obj[item.symbol] = item;
+    return obj;
+  }, {});
+  return dataObject;
+};

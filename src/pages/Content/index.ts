@@ -53,7 +53,6 @@ import { TweetEnhancer } from './Tweets';
     console.log('Received message', request);
 
     if (request.message === 'toggleBalances') {
-      console.log('toogle');
       // Add logic here to toggle the balances
     }
   });
