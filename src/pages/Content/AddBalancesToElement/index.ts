@@ -7,20 +7,27 @@ import { balancesFetcherModule } from '../modules/BalancesModule';
 import { DOMHelper } from '../modules/DOMModule/DOMHelper';
 
 type addressType = `0x${string}`;
+type TokenType = {
+  symbol?: string;
+  name?: string;
+};
 export class AddBalancesToElement {
   private elementToGetAddressFrom: HTMLElement | null;
   private elementToRenderOnto: HTMLElement | null;
   private loadingContainer: HTMLElement | null;
   private errorContainer: HTMLElement | null;
+  private tokens: TokenType[];
 
   constructor(
     elementToGetAddressFrom: HTMLElement,
-    elementToRenderOnto: HTMLElement
+    elementToRenderOnto: HTMLElement,
+    tokens?: TokenType[]
   ) {
     this.elementToGetAddressFrom = elementToGetAddressFrom;
     this.elementToRenderOnto = elementToRenderOnto;
     this.loadingContainer = null;
     this.errorContainer = null;
+    this.tokens = tokens || []; // if tokens is not provided, it defaults to an empty array
   }
 
   public async appendENSName(): Promise<void> {

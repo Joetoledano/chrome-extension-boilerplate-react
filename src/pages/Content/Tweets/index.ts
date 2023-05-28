@@ -91,7 +91,8 @@ export class TweetEnhancer {
         this.getTwitterProfileElementToRenderBoxOn(tweet);
       const elementToRenderOn = this.getTweetElementToRenderBoxOn(tweet);
       if (!(elementToGetNameFrom && elementToRenderOn)) return;
-
+      const tokensMentionedInTweets =
+        this.extractTokensInfoFromTweetContent(elementToRenderOn);
       const addedRelevantTweet = new AddBalancesToElement(
         elementToGetNameFrom as HTMLElement,
         elementToRenderOn as HTMLElement

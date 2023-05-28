@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import { Tab } from '@headlessui/react';
+import React, { Fragment, useEffect, useState } from 'react';
 import messagingHub from '../../messaging/';
-
 import './Popup.css';
+import ActiveWallet from './components/activeWallet';
+import Registrations from './components/registrations';
 
 const Popup = () => {
   const [account, setAccount] = useState('');
   const [showBalances, setShowBalances] = useState(true);
   const [walletAddress, setWalletAddress] = useState(null);
   const [walletBalance, setWalletBalance] = useState(null);
+  const [availableRegistrationsRemaining, setAvailableRegistrationsRemaining] =
+    useState(0);
 
   const handleAccountChange = (e) => {
     setAccount(e.target.value);
@@ -44,24 +48,61 @@ const Popup = () => {
   );
   return (
     <div className="App">
-      <header className="App-header">Let's show some bags</header>
-      <div>
-        <h2>Wallet Address:</h2>
-        <p>{walletAddress}</p>
-        <h2>Wallet Balance:</h2>
-        <p>{walletBalance}</p>
-      </div>
-      <form>
-        <input
-          type="text"
-          value={account}
-          onChange={handleAccountChange}
-          placeholder="Account address"
-        />
-        <button type="button" onClick={toggleBalances}>
-          {showBalances ? 'Hide Balances' : 'Show Balances'}
-        </button>
-      </form>
+      <Tab.Group>
+        <Tab.List>
+          <Tab as={Fragment}>
+            {({ selected }) => (
+              /* Use the `selected` state to conditionally style the selected tab. */
+              <button
+                className={
+                  selected ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                }
+              >
+                Focused Wallet{' '}
+              </button>
+            )}
+          </Tab>{' '}
+          <Tab as={Fragment}>
+            {({ selected }) => (
+              /* Use the `selected` state to conditionally style the selected tab. */
+              <button
+                className={
+                  selected ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                }
+              >
+                Registrations
+              </button>
+            )}
+          </Tab>{' '}
+          <Tab as={Fragment}>
+            {({ selected }) => (
+              /* Use the `selected` state to conditionally style the selected tab. */
+              <button
+                className={
+                  selected ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                }
+              >
+                Profile
+              </button>
+            )}
+          </Tab>
+          {/* ...  */}
+        </Tab.List>
+        <Tab.Panels>
+          <ActiveWallet
+            walletAddress={walletAddress}
+            walletBalance={walletBalance}
+          />
+          <Registrations
+            handleAccountChange={handleAccountChange}
+            account={account}
+            availableRegistrationsRemaining={availableRegistrationsRemaining}
+            handleClick={() => {}}
+            showBalances={showBalances}
+          />
+          <Tab.Panel>Profile</Tab.Panel>
+        </Tab.Panels>
+      </Tab.Group>
     </div>
   );
 };
