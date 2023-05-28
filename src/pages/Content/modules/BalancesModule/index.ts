@@ -1,9 +1,15 @@
 import { formatBalance, publicClient } from '../../../../Client';
 export class balancesFetcherModule {
-  constructor() {}
+  private walletAddress: `0x${string}`;
 
-  public async getFormattedBalance(ensAddress: `0x${string}`): Promise<string> {
-    const balancesData = await publicClient.getBalance({ address: ensAddress });
+  constructor(walletAddress: `0x${string}`) {
+    this.walletAddress = walletAddress;
+  }
+
+  public async getFormattedBalance(): Promise<string> {
+    const balancesData = await publicClient.getBalance({
+      address: this.walletAddress,
+    });
     return formatBalance(balancesData);
   }
 }

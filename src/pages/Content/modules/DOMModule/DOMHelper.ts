@@ -15,9 +15,13 @@ export class DOMHelper {
     boxHeaderLeftIcon.textContent = '🧳';
 
     const boxHeaderTitle = document.createElement('p');
-    boxHeaderTitle.textContent = `${title}'s Wallet Stats`;
+    boxHeaderTitle.textContent = `Wallet Stats`;
+    const boxHeaderSpacer = document.createElement('p');
+    boxHeaderSpacer.textContent = `  `;
 
     boxHeader.appendChild(boxHeaderLeftIcon);
+    boxHeader.appendChild(boxHeaderSpacer);
+
     boxHeader.appendChild(boxHeaderTitle);
 
     return boxHeader;
@@ -94,5 +98,47 @@ export class DOMHelper {
       loadingDiv.classList.add('loading-container');
       parentContainer.appendChild(loadingDiv);
     }
+  }
+
+  public static addErrorUI(
+    parentContainer: HTMLElement,
+    errorMessage: string
+  ): void {
+    const errorContainer = parentContainer.querySelector('.error-container');
+
+    if (!errorContainer) {
+      const errorText = document.createElement('p');
+      errorText.textContent = errorMessage;
+
+      const errorDiv = document.createElement('div');
+      errorDiv.classList.add('error-container');
+      errorDiv.appendChild(errorText);
+
+      parentContainer.appendChild(errorDiv);
+    }
+  }
+
+  public static removeElement(element: HTMLElement): void {
+    const parentElement = element.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(element);
+    }
+  }
+
+  public static getParentElement(
+    element: HTMLElement,
+    selector: string
+  ): HTMLElement | null {
+    let parentElement: HTMLElement | null = element.parentElement;
+
+    while (parentElement) {
+      if (parentElement.matches(selector)) {
+        return parentElement;
+      }
+
+      parentElement = parentElement.parentElement;
+    }
+
+    return null;
   }
 }

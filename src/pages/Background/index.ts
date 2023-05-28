@@ -1,10 +1,17 @@
-chrome.webNavigation.onHistoryStateUpdated.addListener(function (details) {
-  // Check if the URL change matches your desired criteria
-  console.log('the deets', details);
-  if (details.url.includes('twitter')) {
-    console.log('pasta monsta');
-    // Invoke your extension's functionality here
-    // e.g., send a message to a content script
-    chrome.tabs.sendMessage(details.tabId, { action: 'on tweetah' });
+import messagingHub from '../../messaging';
+
+messagingHub.listenForMessages(
+  'toggleBalances',
+  (data, sender, sendResponse) => {
+    console.log('Toggling balances!');
+    // Add your logic to toggle balances here
   }
-});
+);
+
+messagingHub.listenForMessages(
+  'someOtherType',
+  (data, sender, sendResponse) => {
+    console.log('Handling some other type of message');
+    // Add your logic to handle this type of message here
+  }
+);

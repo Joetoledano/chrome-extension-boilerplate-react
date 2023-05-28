@@ -6,10 +6,11 @@ export const publicClient = createPublicClient({
   chain: mainnet,
   transport: http(),
 });
+type addressType = `0x${string}`;
 
 export async function fetchAddressForENSName(
   ensName: string
-): Promise<string | null> {
+): Promise<addressType | null> {
   if (ensName) {
     try {
       const ensAddress = await publicClient.getEnsAddress({ name: ensName });
