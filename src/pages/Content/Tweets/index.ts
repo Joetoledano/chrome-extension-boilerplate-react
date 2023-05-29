@@ -27,7 +27,7 @@ export class TweetEnhancer {
 
   private getTweetElementToRenderBoxOn(element: HTMLElement): Element | null {
     const tweetElement = element.querySelector('[data-testid="tweetText"]');
-    return tweetElement;
+    return tweetElement as HTMLElement;
   }
 
   private getRelevantTweetsFromEthUser(

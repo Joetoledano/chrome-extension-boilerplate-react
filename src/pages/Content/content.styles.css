@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 .balances-box {
   min-height: max-content;
   background-color: #e8ebfe;

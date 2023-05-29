@@ -38,14 +38,12 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 var options = {
   mode: process.env.NODE_ENV || 'development',
   entry: {
-    options: path.join(__dirname, 'src', 'pages', 'Options', 'index.jsx'),
-    popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.jsx'),
+    popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.tsx'),
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.ts'),
     contentScript: path.join(__dirname, 'src', 'pages', 'Content', 'index.ts'),
-    panel: path.join(__dirname, 'src', 'pages', 'Panel', 'index.jsx'),
   },
   chromeExtensionBoilerplate: {
-    notHotReload: ['background', 'contentScript', 'devtools'],
+    notHotReload: ['background', 'contentScript'],
   },
   output: {
     filename: '[name].bundle.js',
@@ -56,15 +54,17 @@ var options = {
   module: {
     rules: [
       {
-        // look for .css or .scss files
         test: /\.(css|scss)$/,
-        // in the `src` directory
         use: [
+          'style-loader',
+          'css-loader',
           {
-            loader: 'style-loader',
-          },
-          {
-            loader: 'css-loader',
+            loader: 'postcss-loader',
+            options: {
+              postcssOptions: {
+                plugins: [require('tailwindcss'), require('autoprefixer')],
+              },
+            },
           },
           {
             loader: 'sass-loader',
@@ -74,6 +74,7 @@ var options = {
           },
         ],
       },
+
       {
         test: new RegExp('.(' + fileExtensions.join('|') + ')$'),
         type: 'asset/resource',
@@ -184,21 +185,9 @@ var options = {
     }),
 
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'src', 'pages', 'Options', 'index.html'),
-      filename: 'options.html',
-      chunks: ['options'],
-      cache: false,
-    }),
-    new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src', 'pages', 'Popup', 'index.html'),
       filename: 'popup.html',
       chunks: ['popup'],
-      cache: false,
-    }),
-    new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'src', 'pages', 'Panel', 'index.html'),
-      filename: 'panel.html',
-      chunks: ['panel'],
       cache: false,
     }),
   ].filter(Boolean),
