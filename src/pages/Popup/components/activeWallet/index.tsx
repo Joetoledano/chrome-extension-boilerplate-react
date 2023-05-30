@@ -13,12 +13,14 @@ interface ActiveWalletProps {
   walletAddress: string | null;
   walletBalance: number | null;
   twitterHandle: string;
+  twitterProfileImage?: string;
 }
 
 const ActiveWallet: React.FC<ActiveWalletProps> = ({
   walletAddress,
   twitterHandle,
   walletBalance,
+  twitterProfileImage,
 }) => {
   const options = ['Wallet Addresses', 'Business Info', 'Social Profiles'];
   const [selectedOption, setSelectedOption] = useState<string>('');
@@ -69,7 +71,15 @@ const ActiveWallet: React.FC<ActiveWalletProps> = ({
     <div className="flex flex-col w-full space-y-4 px-4">
       <div className="flex flex-row justify-between w-full mt-2 mb-4">
         <div className="flex flex-row items-center w-full gap-x-2 ">
-          <div className="w-6 h-6 bg-gray-500 rounded-full" />
+          {twitterProfileImage && twitterProfileImage.length ? (
+            <img
+              src={twitterProfileImage}
+              className="w-6 h-6 rounded-full"
+              alt={`twitter profile for ${twitterHandle}`}
+            />
+          ) : (
+            <div className="w-6 h-6 bg-gray-500 rounded-full" />
+          )}
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-gray-900 tracking-tight">
               {twitterHandle}
@@ -81,7 +91,7 @@ const ActiveWallet: React.FC<ActiveWalletProps> = ({
               {walletAddress ? (
                 <button
                   onClick={() => copyToClipboard(walletAddress)}
-                  className="font-light text-xs text-gray-600 tracking-wide"
+                  className="font-light text-xs text-indigo-600 tracking-wide"
                 >
                   Copy{' '}
                 </button>

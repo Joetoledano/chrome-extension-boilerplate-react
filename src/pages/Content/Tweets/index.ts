@@ -6,10 +6,26 @@ import {
 } from '../../../lib/helpers';
 import ExtensionMessagingHub from '../../../messaging';
 import { AddBalancesToElement } from '../AddBalancesToElement';
+type TweetType = {
+  text: string;
+  username: string;
+  handle: string;
+  imageUrl: string;
+  timestamp: string; // Consider using a Date if you have timestamps as datetime strings
+  likes: number;
+  replies: number;
+  retweets: number;
+};
 
+// TODOS:
+//      1. Add function to detect scrolls and message sending to popup for relevant tweets, and sending relevant tweets info to popup
+//      2. Add listener to get back balances and address info for relevant tweets from popup
+//         a. Within listener add back function to render tweets info onto tweet
 export class TweetEnhancer {
   private tweets: HTMLElement[] | null;
+  private interval: any;
 
+  // Sends responses for messages from background/popup
   private handleMessageFromPopup = (
     message: { type: string; data: { action: string; payload?: any } },
     sender: chrome.runtime.MessageSender,
@@ -33,6 +49,30 @@ export class TweetEnhancer {
             twitterViewResponse
           )
             .then((response) => console.log(response))
+            .catch((error) => console.error(error));
+          break;
+        case tweetActions.loadRelevantTweets:
+          const relevantTweets = this.getAndFormatRelevantTweets();
+
+          const relevantTweetsResponse = {
+            messageAction: tweetActions.loadRelevantTweets,
+            relevantTweets: relevantTweets,
+          };
+          ExtensionMessagingHub.sendMessage(
+            'background',
+            null,
+            'messageToPopup',
+            relevantTweetsResponse
+          )
+            .then((response) => {
+              // this.interval = window.setInterval(() => {
+              //   const allTweetsOnPage = this.getTweetsFromPage();
+              //   const relevantTweets =
+              //     this.getRelevantTweetsFromEthUser(allTweetsOnPage);
+              //   if (relevantTweets.length === 0) return;
+              //   this.addBalancesDataToTweets(relevantTweets);
+              // }, 5000); // Interval of 5 seconds (adjust as needed)
+            })
             .catch((error) => console.error(error));
           break;
         default:
@@ -81,6 +121,159 @@ export class TweetEnhancer {
 
   private getTweetsFromPage(): HTMLElement[] {
     return Array.from(document.querySelectorAll('article'));
+  }
+
+  private getTwitterProfileUsernameAndHandleFromUsernameElement(
+    usernameElement: HTMLElement
+  ) {
+    const getHandleInfo = (spans: any) => {
+      if (spans && spans.length > 0) {
+        const elementWithAtSymbol = Array.from(spans).find((el) =>
+          el.innerText.includes('@')
+        );
+        return elementWithAtSymbol ? elementWithAtSymbol.innerText : '';
+      }
+      return '';
+    };
+    const getUsernameInfo = (spans: any) => {
+      if (spans && spans.length) {
+        const elementWithAtSymbol = Array.from(spans).find((el: any) => {
+          return el.innerText && el.innerText.length > 0;
+        });
+        return elementWithAtSymbol ? elementWithAtSymbol.innerText : '';
+      }
+      return '';
+    };
+    const anchorElements = usernameElement
+      ? usernameElement.querySelector('a')
+      : null;
+    const firstDivInAnchorElement = anchorElements
+      ? anchorElements.querySelector('div')
+      : null;
+    const firstDivWithinFirstDivInAnchorElement = firstDivInAnchorElement
+      ? firstDivInAnchorElement.querySelector('div')
+      : null;
+    const spanElementsFromAnchor = firstDivWithinFirstDivInAnchorElement
+      ? firstDivWithinFirstDivInAnchorElement.querySelectorAll('span')
+      : null;
+    const spanElements = usernameElement
+      ? usernameElement.querySelectorAll('span')
+      : null;
+
+    return {
+      handle: getHandleInfo(spanElements),
+      username: getUsernameInfo(spanElementsFromAnchor),
+    };
+  }
+
+  private getTwitterProfileImageFromTweet(tweetHTML: HTMLElement) {
+    if (tweetHTML) {
+      const userProfileParentElement = tweetHTML.querySelector(
+        '[data-testid="Tweet-User-Avatar"]'
+      );
+      const imageElementFromParentElement = userProfileParentElement
+        ? userProfileParentElement.querySelector('img')
+        : null;
+      const imageUrlFromImageElement = imageElementFromParentElement
+        ? imageElementFromParentElement.src
+        : null;
+      return imageUrlFromImageElement ? imageUrlFromImageElement : '';
+    }
+    return '';
+  }
+
+  private getTweetTimestamp(tweetHTML: HTMLElement) {
+    if (tweetHTML) {
+      const timeElementFromTweet = tweetHTML.querySelector('time');
+      const tweetTimestamp = timeElementFromTweet
+        ? timeElementFromTweet.dateTime
+        : '';
+      return tweetTimestamp;
+    }
+    return '';
+  }
+
+  private getTweetEngagementValues(
+    tweetHTML: HTMLElement,
+    engagementType: 'reply' | 'like' | 'retweet'
+  ) {
+    if (tweetHTML && engagementType) {
+      const engagementElement = tweetHTML.querySelector(
+        `[data-testid=${engagementType}]`
+      );
+      const engagementElementTag = engagementElement
+        ? engagementElement.ariaLabel
+        : null;
+      const engagementValue = engagementElementTag
+        ? engagementElementTag.split(' ')[0]
+        : '0';
+      return Number(engagementValue);
+    }
+    return 0;
+  }
+
+  private extractAndFormatTweetInfo(tweetHTML: HTMLElement): TweetType {
+    if (tweetHTML) {
+      try {
+        const tweetContentElement =
+          this.getTweetElementToRenderBoxOn(tweetHTML);
+        const tweetUserNameSectionElement =
+          this.getTwitterProfileElementToRenderBoxOn(tweetHTML);
+        const text = tweetContentElement
+          ? tweetContentElement.querySelector('span')?.innerText
+          : '';
+        const username = tweetUserNameSectionElement
+          ? this.getTwitterProfileUsernameAndHandleFromUsernameElement(
+              tweetUserNameSectionElement
+            ).username
+          : '';
+        const handle = tweetUserNameSectionElement
+          ? this.getTwitterProfileUsernameAndHandleFromUsernameElement(
+              tweetUserNameSectionElement
+            ).handle
+          : '';
+        const imageUrl = tweetHTML
+          ? this.getTwitterProfileImageFromTweet(tweetHTML)
+          : '';
+        const timestamp = tweetHTML ? this.getTweetTimestamp(tweetHTML) : '';
+        const likes = tweetHTML
+          ? this.getTweetEngagementValues(tweetHTML, 'like')
+          : 0;
+        const replies = tweetHTML
+          ? this.getTweetEngagementValues(tweetHTML, 'reply')
+          : 0;
+        const retweets = tweetHTML
+          ? this.getTweetEngagementValues(tweetHTML, 'retweet')
+          : 0;
+
+        return {
+          text,
+          username,
+          handle,
+          imageUrl,
+          timestamp,
+          likes,
+          replies,
+          retweets,
+        };
+      } catch (e) {}
+    }
+  }
+
+  private getAndFormatRelevantTweets() {
+    const allTweetsOnPage = this.getTweetsFromPage();
+    const relevantTweets = this.getRelevantTweetsFromEthUser(allTweetsOnPage);
+    const formattedRelevantTweets =
+      relevantTweets && relevantTweets.length
+        ? relevantTweets.reduce((formattedTweets: any[], tweet) => {
+            const formattedTweetObject = this.extractAndFormatTweetInfo(tweet);
+            if (formattedTweetObject) {
+              formattedTweets.push(formattedTweetObject);
+            }
+            return formattedTweets;
+          }, [])
+        : [];
+    return formattedRelevantTweets;
   }
 
   private extractTokensInfoFromTweetContent(tweetContent: HTMLElement) {

@@ -1,12 +1,16 @@
 import { Tab } from '@headlessui/react';
 import React, { Fragment, useCallback, useEffect, useState } from 'react';
 import { fetchAddressForENSName } from '../../Client';
-import { profileActions } from '../../lib/constants/ActionMessages';
+import {
+  profileActions,
+  tweetActions,
+} from '../../lib/constants/ActionMessages';
 import ExtensionMessagingHub from '../../messaging/';
 import './Popup.css';
 import ActiveWallet from './components/ActiveWallet';
 import Profile from './components/Profile';
 import Registrations from './components/Registrations';
+import RelevantTweetsList from './components/RelevantTweets';
 import Settings from './components/Settings';
 import useBalances from './hooks/balances/useBalances';
 interface WalletResponse {
@@ -21,9 +25,18 @@ const Popup: React.FC = () => {
   const [twitterView, setTwitterView] = useState<twitterViewType>(null);
   const [focusedTweet, setFocusedTweet] = useState<string | null>(null);
   const [showBalances, setShowBalances] = useState<boolean>(true);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [twitterHandle, setTwitterHandle] = useState<string>('');
+  const [walletAddressForFocusedWallet, setWalletAddressForFocusedWallet] =
+    useState<string | null>(null);
+  const [walletBalanceForFocusedWallet, setWalletBalanceForFocusedWallet] =
+    useState<number | null>(null);
+  const [twitterHandleForFocusedWallet, setTwitterHandleForFocusedWallet] =
+    useState<string>('');
+  const [
+    twitterProfileImageForFocusedWallet,
+    setTwitterProfileImageForFocusedWallet,
+  ] = useState<string>('');
+  const [relevantTweets, setRelevantTweets] = useState<any[]>([]);
+  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const [availableRegistrationsRemaining, setAvailableRegistrationsRemaining] =
     useState<number>(0);
   const [currentView, setCurrentView] = useState('');
@@ -46,6 +59,29 @@ const Popup: React.FC = () => {
     setShowBalances(!showBalances);
     // Add logic to send message to content script
   };
+
+  const loadInRelevantTweets = useCallback(async () => {
+    if (twitterView === 'tweet') {
+      console.log('inside load');
+      try {
+        const messageData = {
+          action: tweetActions.loadRelevantTweets,
+        };
+        await ExtensionMessagingHub.sendMessage(
+          'background',
+          null,
+          'messageFromPopup',
+          messageData
+        );
+      } catch (error) {
+        console.error(
+          `Error while fetching the balance and communicating with background script: ${JSON.stringify(
+            error
+          )}`
+        );
+      }
+    }
+  }, [twitterView]);
 
   const setTwitterViewFunc = useCallback(async () => {
     if (twitterView === null) {
@@ -70,15 +106,20 @@ const Popup: React.FC = () => {
   }, []);
 
   const fetchBalance = useCallback(async () => {
-    if (walletAddress?.includes('0x') && walletBalance === null) {
+    if (
+      walletAddressForFocusedWallet?.includes('0x') &&
+      walletBalanceForFocusedWallet === null
+    ) {
       try {
-        const walletBalanceResult = await getFormattedBalance(walletAddress);
-        setWalletBalance(walletBalanceResult);
+        const walletBalanceResult = await getFormattedBalance(
+          walletAddressForFocusedWallet
+        );
+        setWalletBalanceForFocusedWallet(walletBalanceResult);
         const messageData = {
           action: profileActions.renderProfileInfo,
           payload: {
             walletBalance: walletBalanceResult,
-            walletAddress: walletAddress,
+            walletAddress: walletAddressForFocusedWallet,
           },
         };
 
@@ -96,16 +137,25 @@ const Popup: React.FC = () => {
         );
       }
     }
-  }, [walletAddress, walletBalance, getFormattedBalance]);
+  }, [
+    walletAddressForFocusedWallet,
+    walletBalanceForFocusedWallet,
+    getFormattedBalance,
+  ]);
 
   useEffect(() => {
     fetchBalance();
   }, [fetchBalance]);
 
   useEffect(() => {
+    loadInRelevantTweets();
+  }, [twitterView, loadInRelevantTweets]);
+
+  useEffect(() => {
     setTwitterViewFunc();
   }, [twitterView, setTwitterViewFunc]);
 
+  // Handles actions for messages from the background/content scripts
   const messageHandler = useCallback(async (data: any) => {
     switch (data.data.messageAction) {
       case profileActions.loadProfileInfo:
@@ -132,6 +182,12 @@ const Popup: React.FC = () => {
         break;
       case profileActions.renderProfileInfo:
         break;
+      case tweetActions.loadRelevantTweets:
+        const relevantTweetsTwitterData = data.data.relevantTweets;
+        if (relevantTweetsTwitterData && relevantTweetsTwitterData.length) {
+          setRelevantTweets(relevantTweetsTwitterData);
+        }
+        break;
       default:
         console.warn(`Unknown action: ${data.data.messageAction}`);
     }
@@ -139,7 +195,7 @@ const Popup: React.FC = () => {
 
   useEffect(() => {
     ExtensionMessagingHub.listenForMessages('messageToPopup', messageHandler);
-    if (twitterHandle === '') {
+    if (twitterHandleForFocusedWallet === '') {
       const messageData = {
         action: profileActions.loadProfileInfo,
       };
@@ -163,7 +219,22 @@ const Popup: React.FC = () => {
     return () => {
       // Cleanup code here if necessary
     };
-  }, [twitterHandle, messageHandler]);
+  }, [twitterHandleForFocusedWallet, messageHandler]);
+
+  const handleFocusWallet = (focusedWalletData: any) => {
+    const {
+      focusedWalletHandle,
+      focusedWalletAddress,
+      focusedWalletBalance,
+      focusedWalletProfileImage,
+    } = focusedWalletData;
+
+    setActiveTabIndex(1);
+    setTwitterHandleForFocusedWallet(focusedWalletHandle);
+    setWalletAddressForFocusedWallet(focusedWalletAddress);
+    setWalletBalanceForFocusedWallet(focusedWalletBalance);
+    setTwitterProfileImageForFocusedWallet(focusedWalletProfileImage);
+  };
 
   return (
     <div className="flex relative flex-col items-center  justify-start h-screen bg-gray-800 text-white">
@@ -189,13 +260,21 @@ const Popup: React.FC = () => {
         <Profile />
       ) : (
         <div className="max-w-xl mx-auto bg-white h-screen w-full text-gray-800 px-4 py-2 shadow-md space-y-4">
-          <Tab.Group>
+          <Tab.Group
+            selectedIndex={activeTabIndex}
+            onChange={setActiveTabIndex}
+          >
             <Tab.Panels>
+              <RelevantTweetsList
+                tweets={relevantTweets}
+                handleFocusWallet={handleFocusWallet}
+              />
               <Tab.Panel>
                 <ActiveWallet
-                  twitterHandle={twitterHandle}
-                  walletAddress={walletAddress}
-                  walletBalance={walletBalance}
+                  twitterHandle={twitterHandleForFocusedWallet}
+                  twitterProfileImage={twitterProfileImageForFocusedWallet}
+                  walletAddress={walletAddressForFocusedWallet}
+                  walletBalance={walletBalanceForFocusedWallet}
                 />
               </Tab.Panel>
               <Registrations
@@ -209,8 +288,9 @@ const Popup: React.FC = () => {
               />
               <Tab.Panel>Profile</Tab.Panel>
             </Tab.Panels>
-            <Tab.List className="fixed bottom-0 border-t border-t-slate-200 left-0 z-10 flex items-center justify-between px-4 py-2 bg-white shadow-lg w-full text-gray-500">
+            <Tab.List className="fixed bottom-0 border-t border-t-slate-200 left-0 z-10 gap-x-4 flex items-center justify-between px-4 py-2 bg-white shadow-lg w-full text-gray-500">
               {[
+                { name: 'Relevant Tweets', icon: 'tweets-icon' },
                 { name: 'Focused Wallet', icon: 'wallet-icon' },
                 { name: 'Deep Dives', icon: 'registrations-icon' },
                 { name: 'Share', icon: 'share-icon' },
