@@ -1,4 +1,3 @@
-import messagingHub from '../../messaging';
 import { TwitterProfileEnhancer } from './Profiles';
 import { TweetEnhancer } from './Tweets';
 
@@ -32,30 +31,7 @@ import { TweetEnhancer } from './Tweets';
   chrome.runtime.sendMessage({ message: 'dataForPopup', data: data });
 
   // Send a message to the background script
-  messagingHub
-    .sendMessageToBackgroundScript('toggleBalances', { someData: 'example' })
-    .then((response) => {
-      console.log('Received response:', response);
-    })
-    .catch((error) => {
-      console.error('Error sending message:', error);
-    });
 
-  // Listen for messages from the popup or background script
-  messagingHub.listenForMessages(
-    'popupMessage',
-    (data, sender, sendResponse) => {
-      console.log('Received message from popup:', data);
-      // Handle the message here
-    }
-  );
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    console.log('Received message', request);
-
-    if (request.message === 'toggleBalances') {
-      // Add logic here to toggle the balances
-    }
-  });
   contentScript.run();
 
   document.addEventListener('DOMContentLoaded', () => {

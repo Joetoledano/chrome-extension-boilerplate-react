@@ -5,58 +5,106 @@ import DisplaySettings from './Display';
 import NotificationSettings from './Notifications';
 import PrivacySettings from './Privacy';
 
-const Settings = () => {
-  const [account, setAccount] = useState({});
-  const [notifications, setNotifications] = useState({});
-  const [privacy, setPrivacy] = useState({});
-  const [display, setDisplay] = useState({});
-  const [data, setData] = useState({});
+interface ISettingsComponent {
+  title: string;
+  description: string;
+  component: JSX.Element;
+  icon: string;
+}
 
-  // functions to handle changes go here
+const Settings: React.FC = () => {
+  const [account, setAccount] = useState<Record<string, unknown>>({});
+  const [notifications, setNotifications] = useState<Record<string, unknown>>(
+    {}
+  );
+  const [privacy, setPrivacy] = useState<Record<string, unknown>>({});
+  const [display, setDisplay] = useState<Record<string, unknown>>({});
+  const [data, setData] = useState<Record<string, unknown>>({});
 
-  return (
-    <div className="settings p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
-        Settings
-      </h2>
+  const [currentSetting, setCurrentSetting] =
+    useState<ISettingsComponent | null>(null);
 
-      <div className="mb-4">
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
-          Account Settings
-        </h3>
-        <AccountSettings value={account} onChange={setAccount} />
-      </div>
-
-      <div className="mb-4">
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
-          Notification Settings
-        </h3>
+  const settingsList: ISettingsComponent[] = [
+    {
+      title: 'Account Settings',
+      description: 'Manage your account details',
+      component: <AccountSettings value={account} onChange={setAccount} />,
+      icon: '👤',
+    },
+    {
+      title: 'Notification Settings',
+      description: 'Control your notification preferences',
+      component: (
         <NotificationSettings
           value={notifications}
           onChange={setNotifications}
         />
-      </div>
+      ),
+      icon: '🔔',
+    },
+    {
+      title: 'Privacy Settings',
+      description: 'Control your privacy settings',
+      component: <PrivacySettings value={privacy} onChange={setPrivacy} />,
+      icon: '🔒',
+    },
+    {
+      title: 'Display Settings',
+      description: 'Adjust your display settings',
+      component: <DisplaySettings value={display} onChange={setDisplay} />,
+      icon: '🖥️',
+    },
+    {
+      title: 'Data Settings',
+      description: 'Manage your data settings',
+      component: <DataSettings value={data} onChange={setData} />,
+      icon: '📊',
+    },
+  ];
 
-      <div className="mb-4">
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
-          Privacy Settings
-        </h3>
-        <PrivacySettings value={privacy} onChange={setPrivacy} />
-      </div>
+  const handleSettingClick = (setting: ISettingsComponent) => {
+    setCurrentSetting(setting);
+  };
 
-      <div className="mb-4">
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
-          Display Settings
-        </h3>
-        <DisplaySettings value={display} onChange={setDisplay} />
-      </div>
+  return (
+    <div className="max-w-xl mx-auto bg-white h-screen w-full text-gray-800 px-4 py-2 shadow-md space-y-4">
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+        Settings
+      </h2>
 
-      <div>
-        <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
-          Data Settings
-        </h3>
-        <DataSettings value={data} onChange={setData} />
-      </div>
+      {!currentSetting ? (
+        settingsList.map((setting, index) => (
+          <div
+            key={setting.title}
+            className={`mb-4 cursor-pointer ${
+              index < settingsList.length - 1
+                ? 'border-b border-gray-200 pb-4'
+                : ''
+            }`}
+            onClick={() => handleSettingClick(setting)}
+          >
+            <div className="flex items-center">
+              <span className="mr-2">{setting.icon}</span>
+              <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200">
+                {setting.title}
+              </h3>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {setting.description}
+            </p>
+          </div>
+        ))
+      ) : (
+        <div>
+          <button
+            className="text-indigo-600 hover:text-indigo-900"
+            onClick={() => setCurrentSetting(null)}
+          >
+            Back
+          </button>
+          {currentSetting.component}
+        </div>
+      )}
     </div>
   );
 };

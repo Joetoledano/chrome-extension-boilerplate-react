@@ -11,10 +11,12 @@ import WalletAddresses from './AddedDetails/WalletAddresses';
 interface ActiveWalletProps {
   walletAddress: string | null;
   walletBalance: number | null;
+  twitterHandle: string;
 }
 
 const ActiveWallet: React.FC<ActiveWalletProps> = ({
   walletAddress,
+  twitterHandle,
   walletBalance,
 }) => {
   const options = ['Wallet Addresses', 'Business Info', 'Social Profiles'];
@@ -69,7 +71,7 @@ const ActiveWallet: React.FC<ActiveWalletProps> = ({
           <div className="w-6 h-6 bg-gray-500 rounded-full" />
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-gray-900 tracking-tight">
-              @test
+              {twitterHandle}
             </span>
             <span className="font-light text-xs text-gray-600 tracking-wide">
               {walletAddress ? walletAddress : 'Text 0x'}
@@ -103,7 +105,7 @@ const ActiveWallet: React.FC<ActiveWalletProps> = ({
           <Tab.Panels>
             <BagTab
               tokens={tokens}
-              walletBalance={10}
+              walletBalance={walletBalance ? walletBalance : 0}
               walletPerformance={100}
             />
 

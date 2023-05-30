@@ -1,19 +1,24 @@
+type MessagePayload = {
+  type: string;
+  data: any;
+};
+
 type MessageHandler = (
-  message: any,
+  message: MessagePayload,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response: any) => void
+  sendResponse: (response?: any) => void
 ) => void;
 
 class ExtensionMessagingHub {
   private static instance: ExtensionMessagingHub;
-  private handlers: { [type: string]: MessageHandler } = {};
+  private handlers: Record<string, MessageHandler> = {};
 
   private constructor() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const handler = this.handlers[message.type];
       if (handler) {
-        handler(message.data, sender, sendResponse);
-        return true; // This ensures async sendResponse
+        handler(message, sender, sendResponse);
+        return true; // Keeps the sendMessage connection open for async `sendResponse`
       }
     });
   }
@@ -26,37 +31,36 @@ class ExtensionMessagingHub {
   }
 
   public listenForMessages(type: string, handler: MessageHandler): void {
+    console.log('the type of message', type);
     this.handlers[type] = handler;
   }
 
-  public async sendMessageToBackgroundScript(
+  public async sendMessage(
+    destination: 'background' | 'content',
+    tabId: number | null,
     type: string,
     data: any
   ): Promise<any> {
+    console.log(
+      `Sending Message to: ${destination}, of type ${type}, with data of ${JSON.stringify(
+        data
+      )}`
+    );
     return new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ type, data }, (response) => {
+      const payload = { type, data };
+      const callback = (response: any) => {
         if (chrome.runtime.lastError) {
           reject(chrome.runtime.lastError);
         } else {
           resolve(response);
         }
-      });
-    });
-  }
+      };
 
-  public async sendMessageToContentScript(
-    tabId: number,
-    type: string,
-    data: any
-  ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      chrome.tabs.sendMessage(tabId, { type, data }, (response) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(response);
-        }
-      });
+      if (destination === 'background') {
+        chrome.runtime.sendMessage(payload, callback);
+      } else if (destination === 'content' && tabId !== null) {
+        chrome.tabs.sendMessage(tabId, payload, callback);
+      }
     });
   }
 }

@@ -1,9 +1,4 @@
-import { fetchAddressForENSName } from '../../../Client';
-import {
-  extractEthAddress,
-  hasChildElementWithClassName,
-} from '../../../lib/helpers';
-import { balancesFetcherModule } from '../modules/BalancesModule';
+import { hasChildElementWithClassName } from '../../../lib/helpers';
 import { DOMHelper } from '../modules/DOMModule/DOMHelper';
 
 type addressType = `0x${string}`;
@@ -12,18 +7,22 @@ type TokenType = {
   name?: string;
 };
 export class AddBalancesToElement {
-  private elementToGetAddressFrom: HTMLElement | null;
+  private addressForProfile: string;
+  private balanceForProfile: number;
+
   private elementToRenderOnto: HTMLElement | null;
   private loadingContainer: HTMLElement | null;
   private errorContainer: HTMLElement | null;
   private tokens: TokenType[];
 
   constructor(
-    elementToGetAddressFrom: HTMLElement,
+    addressForProfile: string,
+    balanceForProfile: number,
     elementToRenderOnto: HTMLElement,
     tokens?: TokenType[]
   ) {
-    this.elementToGetAddressFrom = elementToGetAddressFrom;
+    this.addressForProfile = addressForProfile;
+    this.balanceForProfile = balanceForProfile;
     this.elementToRenderOnto = elementToRenderOnto;
     this.loadingContainer = null;
     this.errorContainer = null;
@@ -31,63 +30,60 @@ export class AddBalancesToElement {
   }
 
   public async appendENSName(): Promise<void> {
-    if (!this.elementToGetAddressFrom || !this.elementToRenderOnto) return;
+    if (!this.elementToRenderOnto) return;
     if (
       this.elementToRenderOnto.getElementsByClassName('balances-box').length > 0
     )
       return;
-    const nameWithENS = this.elementToGetAddressFrom;
-    const hasChild = this.elementToRenderOnto
+
+    const hasChild: boolean = this.elementToRenderOnto
       ? hasChildElementWithClassName('box-header', this.elementToRenderOnto)
       : true;
+
     if (hasChild) return;
 
-    const filteredENSText = nameWithENS?.innerText
-      ? extractEthAddress(nameWithENS.innerText)
-      : null;
-    if (nameWithENS && filteredENSText) {
-      try {
-        const ensAddress: addressType | null = filteredENSText
-          ? await fetchAddressForENSName(filteredENSText.trim())
-          : null;
-        if (ensAddress) {
-          this.displayLoadingUI();
-          const balancesFetcher = new balancesFetcherModule(ensAddress);
-          const boxEl = DOMHelper.buildBox('balances-box');
-          const boxHeader = DOMHelper.buildBoxHeader(ensAddress);
-          const toggleButton = DOMHelper.addToggleButton(boxEl); // Creating toggle button
-          boxHeader.appendChild(toggleButton); // Appending toggle button to the header
-          toggleButton.addEventListener('click', () => {
-            // Add event listener
-            const valuesContainer =
-              boxEl.getElementsByClassName('values-container')[0];
-            if (valuesContainer) {
-              valuesContainer.classList.toggle('hidden');
-            }
-          });
-          boxEl.appendChild(boxHeader);
-          const valueFields = [
-            {
-              title: 'Address',
-              value: ensAddress,
-            },
-            {
-              title: 'Balance',
-              value: `${await balancesFetcher.getFormattedBalance()} Eth`,
-            },
-          ];
-          this.removeLoadingUI();
+    try {
+      this.displayLoadingUI();
+      const boxEl: HTMLElement = DOMHelper.buildBox('balances-box');
+      const boxHeader: HTMLElement = DOMHelper.buildBoxHeader(
+        this.addressForProfile
+      );
+      const toggleButton: HTMLElement = DOMHelper.addToggleButton(boxEl); // Creating toggle button
+      boxHeader.appendChild(toggleButton); // Appending toggle button to the header
 
-          const boxValuesContainer =
-            DOMHelper.createValuesContainer(valueFields);
-          boxEl.appendChild(boxValuesContainer);
-          this.elementToRenderOnto.appendChild(boxEl);
-        } else {
-          throw new Error('Failed to fetch ENS address');
+      toggleButton.addEventListener('click', () => {
+        // Add event listener
+        const valuesContainer: Element | undefined =
+          boxEl.getElementsByClassName('values-container')[0];
+
+        if (valuesContainer) {
+          valuesContainer.classList.toggle('hidden');
         }
-      } catch (error: any) {
-        this.displayErrorUI(error.message);
-      }
+      });
+
+      boxEl.appendChild(boxHeader);
+
+      const balanceValue: number = this.balanceForProfile;
+      const valueFields: Array<{ title: string; value: string }> = [
+        {
+          title: 'Address',
+          value: this.addressForProfile,
+        },
+        {
+          title: 'Balance',
+          value: `${balanceValue} Eth`,
+        },
+      ];
+
+      this.removeLoadingUI();
+
+      const boxValuesContainer: HTMLElement =
+        DOMHelper.createValuesContainer(valueFields);
+
+      boxEl.appendChild(boxValuesContainer);
+      this.elementToRenderOnto.appendChild(boxEl);
+    } catch (error: any) {
+      this.displayErrorUI(error.message);
     }
   }
 
