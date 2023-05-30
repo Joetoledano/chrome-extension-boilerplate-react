@@ -4,6 +4,7 @@ import Dropdown from '../common/Dropdown';
 import ActivitiesTab from './Tabs/Activity';
 import BagTab from './Tabs/Bags';
 
+import { copyToClipboard, truncateString } from '../../../../lib/helpers';
 import BusinessInfo from './AddedDetails/BusinessInfo';
 import SocialProfiles from './AddedDetails/SocialInfo';
 import WalletAddresses from './AddedDetails/WalletAddresses';
@@ -73,9 +74,19 @@ const ActiveWallet: React.FC<ActiveWalletProps> = ({
             <span className="font-semibold text-sm text-gray-900 tracking-tight">
               {twitterHandle}
             </span>
-            <span className="font-light text-xs text-gray-600 tracking-wide">
-              {walletAddress ? walletAddress : 'Text 0x'}
-            </span>
+            <div className="flex flex-row items-center gap-x-2">
+              <span className="font-light text-xs text-gray-600 tracking-wide">
+                {walletAddress ? truncateString(walletAddress, 4, 4) : '0x'}
+              </span>
+              {walletAddress ? (
+                <button
+                  onClick={() => copyToClipboard(walletAddress)}
+                  className="font-light text-xs text-gray-600 tracking-wide"
+                >
+                  Copy{' '}
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
         <Dropdown options={options} onChange={handleSelect} />

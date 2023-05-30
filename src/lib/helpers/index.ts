@@ -119,3 +119,50 @@ export const getTokensDataObjectBySymbol = () => {
   }, {});
   return dataObject;
 };
+
+export function truncateString(
+  input: string,
+  startLength: number,
+  endLength: number
+): string {
+  if (
+    typeof input !== 'string' ||
+    typeof startLength !== 'number' ||
+    typeof endLength !== 'number'
+  ) {
+    throw new Error(
+      'Invalid parameters: Input should be a string and lengths should be numbers.'
+    );
+  }
+
+  if (startLength < 0 || endLength < 0) {
+    throw new Error(
+      'Invalid parameters: StartLength and endLength should be non-negative numbers.'
+    );
+  }
+
+  if (startLength + endLength > input.length) {
+    throw new Error(
+      'Invalid parameters: The sum of startLength and endLength should be less than or equal to input length.'
+    );
+  }
+
+  const start = input.substring(0, startLength);
+  const end = input.substring(input.length - endLength);
+
+  return `${start}...${end}`;
+}
+
+export const copyToClipboard = async (text: string): Promise<void> => {
+  if (!navigator.clipboard) {
+    throw new Error('Clipboard is not accessible');
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    console.log('Text copied to clipboard');
+  } catch (error) {
+    console.error('Failed to copy text: ', error);
+    throw new Error('Failed to copy text');
+  }
+};

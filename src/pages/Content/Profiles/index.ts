@@ -19,6 +19,20 @@ export class TwitterProfileEnhancer {
       // TODO: Fetch and prepare actual data here
       const { action, payload } = message.data;
       switch (action) {
+        case profileActions.setTwitterView:
+          const twitterViewResponse = {
+            twitterView: 'profile',
+            messageAction: profileActions.setTwitterView,
+          };
+          ExtensionMessagingHub.sendMessage(
+            'background',
+            null,
+            'messageToPopup',
+            twitterViewResponse
+          )
+            .then((response) => console.log(response))
+            .catch((error) => console.error(error));
+          break;
         case profileActions.loadProfileInfo:
           // GET THE HANDLE AND ADDRESS AND SEND BACK
           const twitterHandleElement = this.getTwitterProfileHandleElement();
@@ -32,6 +46,7 @@ export class TwitterProfileEnhancer {
           const loadProfileResponse = {
             handle: twitterHandleElement?.innerText,
             address: ensAddress,
+            messageAction: profileActions.loadProfileInfo,
           };
           // Sending message back to popup through background
           ExtensionMessagingHub.sendMessage(

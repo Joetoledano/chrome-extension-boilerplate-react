@@ -14,8 +14,12 @@ interface WalletResponse {
   balance: number;
 }
 
+type twitterViewType = 'tweet' | 'profile' | null;
+
 const Popup: React.FC = () => {
   const [account, setAccount] = useState<string>('');
+  const [twitterView, setTwitterView] = useState<twitterViewType>(null);
+  const [focusedTweet, setFocusedTweet] = useState<string | null>(null);
   const [showBalances, setShowBalances] = useState<boolean>(true);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
@@ -42,6 +46,28 @@ const Popup: React.FC = () => {
     setShowBalances(!showBalances);
     // Add logic to send message to content script
   };
+
+  const setTwitterViewFunc = useCallback(async () => {
+    if (twitterView === null) {
+      try {
+        const messageData = {
+          action: profileActions.setTwitterView,
+        };
+        await ExtensionMessagingHub.sendMessage(
+          'background',
+          null,
+          'messageFromPopup',
+          messageData
+        );
+      } catch (error) {
+        console.error(
+          `Error while fetching the balance and communicating with background script: ${JSON.stringify(
+            error
+          )}`
+        );
+      }
+    }
+  }, []);
 
   const fetchBalance = useCallback(async () => {
     if (walletAddress?.includes('0x') && walletBalance === null) {
@@ -76,26 +102,38 @@ const Popup: React.FC = () => {
     fetchBalance();
   }, [fetchBalance]);
 
+  useEffect(() => {
+    setTwitterViewFunc();
+  }, [twitterView, setTwitterViewFunc]);
+
   const messageHandler = useCallback(async (data: any) => {
-    if (data?.data?.balance) {
-      setWalletAddress(data.data.address);
-      setWalletBalance(data.data.balance);
-    } else if (data?.data?.handle) {
-      setTwitterHandle(data.data.handle);
-      if (data.data.address?.includes('.eth')) {
-        try {
-          const fullWalletAddress = await fetchAddressForENSName(
-            data.data.address
-          );
-          if (fullWalletAddress) {
-            setWalletAddress(fullWalletAddress);
+    switch (data.data.messageAction) {
+      case profileActions.loadProfileInfo:
+        setTwitterHandle(data.data.handle);
+        if (data.data.address?.includes('.eth')) {
+          try {
+            const fullWalletAddress = await fetchAddressForENSName(
+              data.data.address
+            );
+            if (fullWalletAddress) {
+              setWalletAddress(fullWalletAddress);
+            }
+          } catch (error) {
+            console.error(
+              `Error while fetching the wallet address: ${JSON.stringify(
+                error
+              )}`
+            );
           }
-        } catch (error) {
-          console.error(
-            `Error while fetching the wallet address: ${JSON.stringify(error)}`
-          );
         }
-      }
+        break;
+      case profileActions.setTwitterView:
+        setTwitterView(data.data.twitterView);
+        break;
+      case profileActions.renderProfileInfo:
+        break;
+      default:
+        console.warn(`Unknown action: ${data.data.messageAction}`);
     }
   }, []);
 

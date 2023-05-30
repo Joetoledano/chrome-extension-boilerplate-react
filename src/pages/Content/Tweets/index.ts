@@ -1,12 +1,47 @@
+import { tweetActions } from '../../../lib/constants/ActionMessages';
 import {
   getTokensDataObjectByName,
   getTokensDataObjectBySymbol,
   removeSpecialCharacters,
 } from '../../../lib/helpers';
+import ExtensionMessagingHub from '../../../messaging';
 import { AddBalancesToElement } from '../AddBalancesToElement';
+
 export class TweetEnhancer {
   private tweets: HTMLElement[] | null;
-  private interval: number;
+
+  private handleMessageFromPopup = (
+    message: { type: string; data: { action: string; payload?: any } },
+    sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: any) => void
+  ) => {
+    if (message.type) {
+      // Extracting requested data
+
+      // TODO: Fetch and prepare actual data here
+      const { action, payload } = message.data;
+      switch (action) {
+        case tweetActions.setTwitterView:
+          const twitterViewResponse = {
+            twitterView: 'tweet',
+            messageAction: tweetActions.setTwitterView,
+          };
+          ExtensionMessagingHub.sendMessage(
+            'background',
+            null,
+            'messageToPopup',
+            twitterViewResponse
+          )
+            .then((response) => console.log(response))
+            .catch((error) => console.error(error));
+          break;
+        default:
+          console.warn(`Unknown action: ${action}`);
+      }
+
+      sendResponse({ status: 'completed' });
+    }
+  };
 
   private getTwitterProfileElementsToRenderBoxOn(
     element: HTMLElement
@@ -77,12 +112,17 @@ export class TweetEnhancer {
 
   constructor() {
     this.tweets = [];
-    this.interval = window.setInterval(() => {
-      const allTweetsOnPage = this.getTweetsFromPage();
-      const relevantTweets = this.getRelevantTweetsFromEthUser(allTweetsOnPage);
-      if (relevantTweets.length === 0) return;
-      this.addBalancesDataToTweets(relevantTweets);
-    }, 5000); // Interval of 5 seconds (adjust as needed)
+    // Listen for messages from popup
+    ExtensionMessagingHub.listenForMessages(
+      'messageToContentScript',
+      this.handleMessageFromPopup
+    );
+    // this.interval = window.setInterval(() => {
+    //   const allTweetsOnPage = this.getTweetsFromPage();
+    //   const relevantTweets = this.getRelevantTweetsFromEthUser(allTweetsOnPage);
+    //   if (relevantTweets.length === 0) return;
+    //   this.addBalancesDataToTweets(relevantTweets);
+    // }, 5000); // Interval of 5 seconds (adjust as needed)
   }
 
   private addBalancesDataToTweets(tweets: HTMLElement[]) {
