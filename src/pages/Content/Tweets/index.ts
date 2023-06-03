@@ -18,7 +18,7 @@ type TweetType = {
 };
 
 // TODOS:
-//      1. Add function to detect scrolls and message sending to popup for relevant tweets, and sending relevant tweets info to popup
+//      1. Add function to detect scrolls and message sending to poprelevantTweetsTwitterDataup for relevant tweets, and sending relevant tweets info to popup
 //      2. Add listener to get back balances and address info for relevant tweets from popup
 //         a. Within listener add back function to render tweets info onto tweet
 export class TweetEnhancer {
@@ -54,9 +54,14 @@ export class TweetEnhancer {
         case tweetActions.loadRelevantTweets:
           const relevantTweets = this.getAndFormatRelevantTweets();
 
+          const allTweetsOnPage = this.getTweetsFromPage();
+
+          const relevantTweetsHTML =
+            this.getRelevantTweetsFromEthUser(allTweetsOnPage);
           const relevantTweetsResponse = {
             messageAction: tweetActions.loadRelevantTweets,
             relevantTweets: relevantTweets,
+            relevantTweetsHTML: JSON.stringify(relevantTweetsHTML),
           };
           ExtensionMessagingHub.sendMessage(
             'background',
@@ -64,16 +69,21 @@ export class TweetEnhancer {
             'messageToPopup',
             relevantTweetsResponse
           )
-            .then((response) => {
-              // this.interval = window.setInterval(() => {
-              //   const allTweetsOnPage = this.getTweetsFromPage();
-              //   const relevantTweets =
-              //     this.getRelevantTweetsFromEthUser(allTweetsOnPage);
-              //   if (relevantTweets.length === 0) return;
-              //   this.addBalancesDataToTweets(relevantTweets);
-              // }, 5000); // Interval of 5 seconds (adjust as needed)
-            })
+            .then((response) => {})
             .catch((error) => console.error(error));
+          break;
+        case tweetActions.renderTweetsInfo:
+          let { relevantTweetsToRender } = payload;
+
+          const pasta = this.getTweetsFromPage();
+          console.log('the pasta', pasta);
+          let relevantTweetsToRenderOn =
+            this.getRelevantTweetsFromEthUser(pasta);
+
+          this.addBalancesDataToTweets(
+            relevantTweetsToRenderOn,
+            relevantTweetsToRender
+          );
           break;
         default:
           console.warn(`Unknown action: ${action}`);
@@ -318,17 +328,18 @@ export class TweetEnhancer {
     // }, 5000); // Interval of 5 seconds (adjust as needed)
   }
 
-  private addBalancesDataToTweets(tweets: HTMLElement[]) {
-    tweets.forEach((tweet: HTMLElement) => {
-      const elementToGetNameFrom =
-        this.getTwitterProfileElementToRenderBoxOn(tweet);
-      const elementToRenderOn = this.getTweetElementToRenderBoxOn(tweet);
-      if (!(elementToGetNameFrom && elementToRenderOn)) return;
-      const tokensMentionedInTweets =
-        this.extractTokensInfoFromTweetContent(elementToRenderOn);
+  private addBalancesDataToTweets(tweets: any[], extractedTweets: any[]) {
+    tweets.forEach((tweet: any, index: number) => {
+      const currentExtractedTweet = extractedTweets[index];
+
+      // const elementToRenderOn = this.getTweetElementToRenderBoxOn(tweet);
+      if (!tweet || !currentExtractedTweet) {
+        return;
+      }
       const addedRelevantTweet = new AddBalancesToElement(
-        elementToGetNameFrom as HTMLElement,
-        elementToRenderOn as HTMLElement
+        currentExtractedTweet.walletAddress,
+        currentExtractedTweet.walletBalance,
+        tweet
       );
       addedRelevantTweet.appendENSName();
     });

@@ -5,6 +5,7 @@ import {
   profileActions,
   tweetActions,
 } from '../../lib/constants/ActionMessages';
+import { extractEthAddress } from '../../lib/helpers';
 import ExtensionMessagingHub from '../../messaging/';
 import './Popup.css';
 import ActiveWallet from './components/ActiveWallet';
@@ -36,6 +37,7 @@ const Popup: React.FC = () => {
     setTwitterProfileImageForFocusedWallet,
   ] = useState<string>('');
   const [relevantTweets, setRelevantTweets] = useState<any[]>([]);
+  const [relevantTweetsHTML, setRelevantTweetsHTML] = useState<any[]>([]);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const [availableRegistrationsRemaining, setAvailableRegistrationsRemaining] =
     useState<number>(0);
@@ -62,7 +64,6 @@ const Popup: React.FC = () => {
 
   const loadInRelevantTweets = useCallback(async () => {
     if (twitterView === 'tweet') {
-      console.log('inside load');
       try {
         const messageData = {
           action: tweetActions.loadRelevantTweets,
@@ -155,18 +156,47 @@ const Popup: React.FC = () => {
     setTwitterViewFunc();
   }, [twitterView, setTwitterViewFunc]);
 
+  const renderElementToTweet = useCallback(async () => {
+    if (twitterView === 'tweet') {
+      try {
+        const messageData = {
+          action: tweetActions.renderTweetsInfo,
+          payload: {
+            relevantTweetsToRender: relevantTweets,
+            relevantTweetsToRenderOn:
+              typeof relevantTweetsHTML === 'string'
+                ? JSON.parse(relevantTweetsHTML)
+                : relevantTweetsHTML,
+          },
+        };
+        await ExtensionMessagingHub.sendMessage(
+          'background',
+          null,
+          'messageFromPopup',
+          messageData
+        );
+      } catch (error) {
+        console.error(
+          `Error while fetching the balance and communicating with background script: ${JSON.stringify(
+            error
+          )}`
+        );
+      }
+    }
+  }, [twitterView, relevantTweets, relevantTweetsHTML]);
+
   // Handles actions for messages from the background/content scripts
   const messageHandler = useCallback(async (data: any) => {
     switch (data.data.messageAction) {
       case profileActions.loadProfileInfo:
-        setTwitterHandle(data.data.handle);
+        setTwitterHandleForFocusedWallet(data.data.handle);
         if (data.data.address?.includes('.eth')) {
           try {
             const fullWalletAddress = await fetchAddressForENSName(
               data.data.address
             );
             if (fullWalletAddress) {
-              setWalletAddress(fullWalletAddress);
+              setWalletAddressForFocusedWallet(fullWalletAddress);
             }
           } catch (error) {
             console.error(
@@ -184,8 +214,11 @@ const Popup: React.FC = () => {
         break;
       case tweetActions.loadRelevantTweets:
         const relevantTweetsTwitterData = data.data.relevantTweets;
+        const relevantTweetsHTMLTwitterData = data.data.relevantTweetsHTML;
+
         if (relevantTweetsTwitterData && relevantTweetsTwitterData.length) {
           setRelevantTweets(relevantTweetsTwitterData);
+          setRelevantTweetsHTML(relevantTweetsHTMLTwitterData);
         }
         break;
       default:
@@ -235,6 +268,54 @@ const Popup: React.FC = () => {
     setWalletBalanceForFocusedWallet(focusedWalletBalance);
     setTwitterProfileImageForFocusedWallet(focusedWalletProfileImage);
   };
+
+  const getAddressForTweet = React.useCallback(async (tweet: any) => {
+    const textWithEnsAddress = [tweet.handle, tweet.username].find((el: any) =>
+      el.includes('.eth')
+    );
+
+    if (textWithEnsAddress) {
+      const extractedAddress = extractEthAddress(textWithEnsAddress);
+      if (extractedAddress) {
+        const addressForText = await fetchAddressForENSName(
+          extractedAddress.toLowerCase().trim()
+        );
+        return addressForText;
+      }
+    }
+    return '';
+  }, []);
+
+  const fetchBalanceForTweet = React.useCallback(async (walletAddress: any) => {
+    if (walletAddress && walletAddress.includes('0x')) {
+      const walletBalanceResult = await getFormattedBalance(walletAddress);
+      return walletBalanceResult;
+    }
+  }, []);
+
+  const addBalancesAndAddressToRelevantTweets = useCallback(async () => {
+    if (relevantTweets && relevantTweets.length) {
+      const relevantTweetsWithBalancesAndAddresses = [];
+      for (let currentTweet of relevantTweets) {
+        const addressForTweet = await getAddressForTweet(currentTweet);
+        const balanceForTweet = await fetchBalanceForTweet(addressForTweet);
+        currentTweet['walletAddress'] = addressForTweet;
+        currentTweet['walletBalance'] = balanceForTweet;
+        relevantTweetsWithBalancesAndAddresses.push(currentTweet);
+      }
+      setRelevantTweets(relevantTweetsWithBalancesAndAddresses);
+      return relevantTweetsWithBalancesAndAddresses;
+    }
+    return [];
+  }, [relevantTweets, fetchBalanceForTweet, getAddressForTweet]);
+
+  useEffect(() => {
+    addBalancesAndAddressToRelevantTweets();
+  }, [relevantTweets, addBalancesAndAddressToRelevantTweets]);
+
+  useEffect(() => {
+    renderElementToTweet();
+  }, [renderElementToTweet, relevantTweets]);
 
   return (
     <div className="flex relative flex-col items-center  justify-start h-screen bg-gray-800 text-white">
