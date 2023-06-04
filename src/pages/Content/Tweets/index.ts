@@ -6,6 +6,10 @@ import {
 } from '../../../lib/helpers';
 import ExtensionMessagingHub from '../../../messaging';
 import { AddBalancesToElement } from '../AddBalancesToElement';
+type ExtractedData = {
+  textContent: string;
+  imageUrl: string | null;
+};
 type TweetType = {
   text: string;
   username: string;
@@ -24,6 +28,7 @@ type TweetType = {
 export class TweetEnhancer {
   private tweets: HTMLElement[] | null;
   private interval: any;
+  private relevantTweetsToUse: any;
 
   // Sends responses for messages from background/popup
   private handleMessageFromPopup = (
@@ -58,10 +63,11 @@ export class TweetEnhancer {
 
           const relevantTweetsHTML =
             this.getRelevantTweetsFromEthUser(allTweetsOnPage);
+          this.relevantTweetsToUse = relevantTweetsHTML;
           const relevantTweetsResponse = {
             messageAction: tweetActions.loadRelevantTweets,
             relevantTweets: relevantTweets,
-            relevantTweetsHTML: JSON.stringify(relevantTweetsHTML),
+            relevantTweetsHTML: relevantTweetsHTML,
           };
           ExtensionMessagingHub.sendMessage(
             'background',
@@ -74,14 +80,8 @@ export class TweetEnhancer {
           break;
         case tweetActions.renderTweetsInfo:
           let { relevantTweetsToRender } = payload;
-
-          const pasta = this.getTweetsFromPage();
-          console.log('the pasta', pasta);
-          let relevantTweetsToRenderOn =
-            this.getRelevantTweetsFromEthUser(pasta);
-
           this.addBalancesDataToTweets(
-            relevantTweetsToRenderOn,
+            this.relevantTweetsToUse,
             relevantTweetsToRender
           );
           break;
@@ -110,7 +110,7 @@ export class TweetEnhancer {
     return profileElement;
   }
 
-  private getTweetElementToRenderBoxOn(element: HTMLElement): Element | null {
+  private getTweetElementBodyText(element: HTMLElement): Element | null {
     const tweetElement = element.querySelector('[data-testid="tweetText"]');
     return tweetElement as HTMLElement;
   }
@@ -222,15 +222,36 @@ export class TweetEnhancer {
     return 0;
   }
 
+  private extractTextAndImageFromElement(
+    element: HTMLElement
+  ): ExtractedData[] {
+    // Get all child elements in the tree
+    const childElements = element.getElementsByTagName('*');
+
+    const extractedData: ExtractedData[] = [];
+
+    for (let i = 0; i < childElements.length; i++) {
+      const childElement = childElements[i];
+      const textContent = childElement.textContent || '';
+      const imageElement = childElement.querySelector('img');
+      const imageUrl = imageElement ? imageElement.src : null;
+
+      extractedData.push({ textContent, imageUrl });
+    }
+
+    return extractedData;
+  }
+
   private extractAndFormatTweetInfo(tweetHTML: HTMLElement): TweetType {
     if (tweetHTML) {
       try {
-        const tweetContentElement =
-          this.getTweetElementToRenderBoxOn(tweetHTML);
+        const tweetContentElement = this.getTweetElementBodyText(tweetHTML);
         const tweetUserNameSectionElement =
           this.getTwitterProfileElementToRenderBoxOn(tweetHTML);
-        const text = tweetContentElement
-          ? tweetContentElement.querySelector('span')?.innerText
+        const content = tweetContentElement
+          ? this.extractTextAndImageFromElement(
+              tweetContentElement as HTMLElement
+            )
           : '';
         const username = tweetUserNameSectionElement
           ? this.getTwitterProfileUsernameAndHandleFromUsernameElement(
@@ -257,7 +278,7 @@ export class TweetEnhancer {
           : 0;
 
         return {
-          text,
+          content,
           username,
           handle,
           imageUrl,
@@ -320,26 +341,25 @@ export class TweetEnhancer {
       'messageToContentScript',
       this.handleMessageFromPopup
     );
-    // this.interval = window.setInterval(() => {
-    //   const allTweetsOnPage = this.getTweetsFromPage();
-    //   const relevantTweets = this.getRelevantTweetsFromEthUser(allTweetsOnPage);
-    //   if (relevantTweets.length === 0) return;
-    //   this.addBalancesDataToTweets(relevantTweets);
-    // }, 5000); // Interval of 5 seconds (adjust as needed)
+
+    console.log('cheeese');
   }
 
   private addBalancesDataToTweets(tweets: any[], extractedTweets: any[]) {
     tweets.forEach((tweet: any, index: number) => {
       const currentExtractedTweet = extractedTweets[index];
 
-      // const elementToRenderOn = this.getTweetElementToRenderBoxOn(tweet);
       if (!tweet || !currentExtractedTweet) {
         return;
       }
+      const { walletAddress, walletBalance } = currentExtractedTweet;
+      if (!walletAddress || walletBalance === undefined || !tweet) return;
+
       const addedRelevantTweet = new AddBalancesToElement(
-        currentExtractedTweet.walletAddress,
-        currentExtractedTweet.walletBalance,
-        tweet
+        walletAddress,
+        walletBalance,
+        tweet,
+        'tweet'
       );
       addedRelevantTweet.appendENSName();
     });

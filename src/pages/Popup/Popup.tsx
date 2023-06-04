@@ -299,11 +299,18 @@ const Popup: React.FC = () => {
       for (let currentTweet of relevantTweets) {
         const addressForTweet = await getAddressForTweet(currentTweet);
         const balanceForTweet = await fetchBalanceForTweet(addressForTweet);
-        currentTweet['walletAddress'] = addressForTweet;
-        currentTweet['walletBalance'] = balanceForTweet;
-        relevantTweetsWithBalancesAndAddresses.push(currentTweet);
+
+        // Create a new object with the updated properties
+        const updatedTweet = {
+          ...currentTweet,
+          walletAddress: addressForTweet,
+          walletBalance: balanceForTweet,
+        };
+
+        relevantTweetsWithBalancesAndAddresses.push(updatedTweet);
       }
       setRelevantTweets(relevantTweetsWithBalancesAndAddresses);
+
       return relevantTweetsWithBalancesAndAddresses;
     }
     return [];

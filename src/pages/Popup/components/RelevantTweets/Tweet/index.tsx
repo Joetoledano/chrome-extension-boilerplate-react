@@ -9,7 +9,7 @@ import useBalances from '../../../hooks/balances/useBalances';
 
 type TweetType = {
   id: string;
-  text: string;
+  content: any[];
   username: string;
   handle: string;
   imageUrl: string;
@@ -63,6 +63,18 @@ const Tweet: React.FC<TweetProps> = ({ tweet, handleFocusWallet }) => {
     fetchBalanceForTweet();
   }, [walletAddress, fetchBalanceForTweet]);
 
+  const renderExtractedData = (data: ExtractedData[]): JSX.Element[] => {
+    return data.map((item, index) => {
+      if (item.imageUrl) {
+        return (
+          <img key={index} src={item.imageUrl} alt="" className="inline-img" />
+        );
+      } else {
+        return <span key={index}>{item.textContent}</span>;
+      }
+    });
+  };
+
   return (
     <div className="bg-white p-4 rounded-lg shadow-md space-y-2">
       <div className="flex items-center space-x-2">
@@ -78,7 +90,9 @@ const Tweet: React.FC<TweetProps> = ({ tweet, handleFocusWallet }) => {
           <p className="text-sm text-gray-500">{tweet.handle}</p>
         </div>
       </div>
-      <p className="text-base font-medium text-gray-700">{tweet.text}</p>
+      <p className="text-base font-medium text-gray-700">
+        {renderExtractedData(tweet.content)}
+      </p>
       <div className="flex justify-between items-end">
         <div>
           <p className="text-gray-500">

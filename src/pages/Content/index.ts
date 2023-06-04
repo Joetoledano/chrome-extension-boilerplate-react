@@ -9,7 +9,10 @@ import { TweetEnhancer } from './Tweets';
         window.location.href.includes('twitter') &&
         !document.body.classList.contains('enhanced')
       ) {
-        if (window.location.href.includes('twitter.com/home')) {
+        if (
+          window.location.href.includes('twitter.com/home') ||
+          window.location.href.includes('twitter.com/search')
+        ) {
           new TweetEnhancer();
         } else {
           new TwitterProfileEnhancer();
@@ -20,15 +23,6 @@ import { TweetEnhancer } from './Tweets';
   }
 
   const contentScript = new ContentScript();
-
-  // Assume this is the data you want to send to the popup
-  let data = {
-    address: '0x123',
-    balance: '4.2 ETH',
-  };
-
-  // Send the data to the background script
-  chrome.runtime.sendMessage({ message: 'dataForPopup', data: data });
 
   // Send a message to the background script
 

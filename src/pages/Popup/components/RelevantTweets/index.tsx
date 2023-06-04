@@ -4,7 +4,7 @@ import Tweet from './Tweet';
 
 type TweetType = {
   id: string;
-  text: string;
+  content: any;
   balance: string;
   address: string;
   username: string;
@@ -37,7 +37,7 @@ const RelevantTweetsList: React.FC<Props> = ({ tweets, handleFocusWallet }) => {
           <Tweet
             tweet={tweet}
             handleFocusWallet={handleFocusWallet}
-            key={tweet.text}
+            key={tweet.content}
           />
         ))}
       </div>
