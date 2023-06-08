@@ -1,22 +1,32 @@
 import { Tab } from '@headlessui/react';
-import React from 'react';
-
+import React, { useState } from 'react';
+import useRegisterWallet from '../../hooks/registrations/useRegisterWallet';
 interface RegistrationsProps {
-  availableRegistrationsRemaining: number;
-  account: string;
-  handleAccountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleClick: () => void;
+  accountFromTweet?: string;
   showBalances: boolean;
 }
 
 const Registrations: React.FC<RegistrationsProps> = ({
-  availableRegistrationsRemaining,
-  account,
-  handleAccountChange,
-  handleClick,
+  accountFromTweet,
   showBalances,
 }) => {
-  // Rest of the component
+  const [account, setAccount] = useState<string>('');
+
+  const {
+    handleRegisterWalletInBackend,
+    registeringWallet,
+    errorRegisteringWallet,
+    availableRegistrationsRemaining,
+    setAvailableRegistrationsRemaining,
+  } = useRegisterWallet();
+
+  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAccount(e.target.value);
+  };
+
+  const handleRegisterProfileClick = async () => {
+    await handleRegisterWalletInBackend(account);
+  };
 
   return (
     <Tab.Panel>
@@ -40,10 +50,12 @@ const Registrations: React.FC<RegistrationsProps> = ({
         />
         <button
           type="button"
-          onClick={handleClick}
+          onClick={handleRegisterProfileClick}
           className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
         >
-          {showBalances ? 'Hide Balances' : 'Show Balances'}
+          {availableRegistrationsRemaining > 0
+            ? 'Register a new Wallet'
+            : 'Add more wallets'}
         </button>
       </form>
     </Tab.Panel>

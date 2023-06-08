@@ -13,7 +13,10 @@ import Profile from './components/Profile';
 import Registrations from './components/Registrations';
 import RelevantTweetsList from './components/RelevantTweets';
 import Settings from './components/Settings';
+import useBalanceForProfile from './hooks/balances/useBalanceForProfile';
+import useBalanceForTweets from './hooks/balances/useBalanceForTweets';
 import useBalances from './hooks/balances/useBalances';
+import useGetTweets from './hooks/tweets/useGetTweets';
 interface WalletResponse {
   address: string;
   balance: number;
@@ -22,32 +25,57 @@ interface WalletResponse {
 type twitterViewType = 'tweet' | 'profile' | null;
 
 const Popup: React.FC = () => {
-  const [account, setAccount] = useState<string>('');
   const [twitterView, setTwitterView] = useState<twitterViewType>(null);
   const [focusedTweet, setFocusedTweet] = useState<string | null>(null);
   const [showBalances, setShowBalances] = useState<boolean>(true);
   const [walletAddressForFocusedWallet, setWalletAddressForFocusedWallet] =
     useState<string | null>(null);
-  const [walletBalanceForFocusedWallet, setWalletBalanceForFocusedWallet] =
-    useState<number | null>(null);
   const [twitterHandleForFocusedWallet, setTwitterHandleForFocusedWallet] =
     useState<string>('');
   const [
     twitterProfileImageForFocusedWallet,
     setTwitterProfileImageForFocusedWallet,
   ] = useState<string>('');
-  const [relevantTweets, setRelevantTweets] = useState<any[]>([]);
-  const [relevantTweetsHTML, setRelevantTweetsHTML] = useState<any[]>([]);
+
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
-  const [availableRegistrationsRemaining, setAvailableRegistrationsRemaining] =
-    useState<number>(0);
+  const { getFormattedBalance, getWalletTokensForAddress } = useBalances();
+
   const [currentView, setCurrentView] = useState('');
+  const {
+    relevantTweets,
+    setRelevantTweets,
+    relevantTweetsHTML,
+    setRelevantTweetsHTML,
+    loadInRelevantTweets,
+  } = useGetTweets(twitterView);
+  const {
+    fetchProfileBalance,
+    walletBalanceForFocusedWallet,
+    setWalletBalanceForFocusedWallet,
+  } = useBalanceForProfile(walletAddressForFocusedWallet, getFormattedBalance);
+  const getAddressForTweet = React.useCallback(async (tweet: any) => {
+    const textWithEnsAddress = [tweet.handle, tweet.username].find((el: any) =>
+      el.includes('.eth')
+    );
 
-  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAccount(e.target.value);
-  };
-
-  const { getFormattedBalance } = useBalances();
+    if (textWithEnsAddress) {
+      const extractedAddress = extractEthAddress(textWithEnsAddress);
+      if (extractedAddress) {
+        const addressForText = await fetchAddressForENSName(
+          extractedAddress.toLowerCase().trim()
+        );
+        return addressForText;
+      }
+    }
+    return '';
+  }, []);
+  const { addBalancesAndAddressToRelevantTweets } = useBalanceForTweets(
+    relevantTweets,
+    setRelevantTweets,
+    getAddressForTweet,
+    getFormattedBalance,
+    getWalletTokensForAddress
+  );
 
   const handleClickSettingsIcon = () => {
     setCurrentView(currentView === 'settings' ? '' : 'settings');
@@ -61,28 +89,6 @@ const Popup: React.FC = () => {
     setShowBalances(!showBalances);
     // Add logic to send message to content script
   };
-
-  const loadInRelevantTweets = useCallback(async () => {
-    if (twitterView === 'tweet') {
-      try {
-        const messageData = {
-          action: tweetActions.loadRelevantTweets,
-        };
-        await ExtensionMessagingHub.sendMessage(
-          'background',
-          null,
-          'messageFromPopup',
-          messageData
-        );
-      } catch (error) {
-        console.error(
-          `Error while fetching the balance and communicating with background script: ${JSON.stringify(
-            error
-          )}`
-        );
-      }
-    }
-  }, [twitterView]);
 
   const setTwitterViewFunc = useCallback(async () => {
     if (twitterView === null) {
@@ -106,47 +112,9 @@ const Popup: React.FC = () => {
     }
   }, []);
 
-  const fetchBalance = useCallback(async () => {
-    if (
-      walletAddressForFocusedWallet?.includes('0x') &&
-      walletBalanceForFocusedWallet === null
-    ) {
-      try {
-        const walletBalanceResult = await getFormattedBalance(
-          walletAddressForFocusedWallet
-        );
-        setWalletBalanceForFocusedWallet(walletBalanceResult);
-        const messageData = {
-          action: profileActions.renderProfileInfo,
-          payload: {
-            walletBalance: walletBalanceResult,
-            walletAddress: walletAddressForFocusedWallet,
-          },
-        };
-
-        await ExtensionMessagingHub.sendMessage(
-          'background',
-          null,
-          'messageFromPopup',
-          messageData
-        );
-      } catch (error) {
-        console.error(
-          `Error while fetching the balance and communicating with background script: ${JSON.stringify(
-            error
-          )}`
-        );
-      }
-    }
-  }, [
-    walletAddressForFocusedWallet,
-    walletBalanceForFocusedWallet,
-    getFormattedBalance,
-  ]);
-
   useEffect(() => {
-    fetchBalance();
-  }, [fetchBalance]);
+    fetchProfileBalance();
+  }, [fetchProfileBalance]);
 
   useEffect(() => {
     loadInRelevantTweets();
@@ -219,6 +187,7 @@ const Popup: React.FC = () => {
         if (relevantTweetsTwitterData && relevantTweetsTwitterData.length) {
           setRelevantTweets(relevantTweetsTwitterData);
           setRelevantTweetsHTML(relevantTweetsHTMLTwitterData);
+          // get balances for tokens mentioned and add to tokens
         }
         break;
       default:
@@ -268,53 +237,6 @@ const Popup: React.FC = () => {
     setWalletBalanceForFocusedWallet(focusedWalletBalance);
     setTwitterProfileImageForFocusedWallet(focusedWalletProfileImage);
   };
-
-  const getAddressForTweet = React.useCallback(async (tweet: any) => {
-    const textWithEnsAddress = [tweet.handle, tweet.username].find((el: any) =>
-      el.includes('.eth')
-    );
-
-    if (textWithEnsAddress) {
-      const extractedAddress = extractEthAddress(textWithEnsAddress);
-      if (extractedAddress) {
-        const addressForText = await fetchAddressForENSName(
-          extractedAddress.toLowerCase().trim()
-        );
-        return addressForText;
-      }
-    }
-    return '';
-  }, []);
-
-  const fetchBalanceForTweet = React.useCallback(async (walletAddress: any) => {
-    if (walletAddress && walletAddress.includes('0x')) {
-      const walletBalanceResult = await getFormattedBalance(walletAddress);
-      return walletBalanceResult;
-    }
-  }, []);
-
-  const addBalancesAndAddressToRelevantTweets = useCallback(async () => {
-    if (relevantTweets && relevantTweets.length) {
-      const relevantTweetsWithBalancesAndAddresses = [];
-      for (let currentTweet of relevantTweets) {
-        const addressForTweet = await getAddressForTweet(currentTweet);
-        const balanceForTweet = await fetchBalanceForTweet(addressForTweet);
-
-        // Create a new object with the updated properties
-        const updatedTweet = {
-          ...currentTweet,
-          walletAddress: addressForTweet,
-          walletBalance: balanceForTweet,
-        };
-
-        relevantTweetsWithBalancesAndAddresses.push(updatedTweet);
-      }
-      setRelevantTweets(relevantTweetsWithBalancesAndAddresses);
-
-      return relevantTweetsWithBalancesAndAddresses;
-    }
-    return [];
-  }, [relevantTweets, fetchBalanceForTweet, getAddressForTweet]);
 
   useEffect(() => {
     addBalancesAndAddressToRelevantTweets();
@@ -366,12 +288,7 @@ const Popup: React.FC = () => {
                 />
               </Tab.Panel>
               <Registrations
-                handleAccountChange={handleAccountChange}
-                account={account}
-                availableRegistrationsRemaining={
-                  availableRegistrationsRemaining
-                }
-                handleClick={() => {}}
+                accountFromTweet={''}
                 showBalances={showBalances}
               />
               <Tab.Panel>Profile</Tab.Panel>

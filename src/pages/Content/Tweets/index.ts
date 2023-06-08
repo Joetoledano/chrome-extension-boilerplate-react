@@ -277,6 +277,11 @@ export class TweetEnhancer {
           ? this.getTweetEngagementValues(tweetHTML, 'retweet')
           : 0;
 
+        const tokens =
+          content && content.length
+            ? this.extractTokensInfoFromTweetContent(content)
+            : [];
+
         return {
           content,
           username,
@@ -286,6 +291,7 @@ export class TweetEnhancer {
           likes,
           replies,
           retweets,
+          tokens,
         };
       } catch (e) {}
     }
@@ -307,14 +313,22 @@ export class TweetEnhancer {
     return formattedRelevantTweets;
   }
 
-  private extractTokensInfoFromTweetContent(tweetContent: HTMLElement) {
+  private extractTokensInfoFromTweetContent(tweetContent: any[]) {
     const tokensObjectByName = getTokensDataObjectByName();
     const tokensObjectBySymbol = getTokensDataObjectBySymbol();
-    const tweetText = tweetContent.querySelector('span')?.innerText;
+    const tweetTextArray = tweetContent.reduce(
+      (overallTweetText: string[], currentTweetContent: any) => {
+        if (currentTweetContent.textContent) {
+          const currentTweetText = currentTweetContent.textContent;
+          overallTweetText.push(currentTweetText);
+        }
+        return overallTweetText;
+      },
+      []
+    );
     // check text for tokens
-    const tokensInTweet = tweetText
-      ?.split(' ')
-      .reduce((overallTokens: any[], currVal: any) => {
+    const tokensInTweet = tweetTextArray.reduce(
+      (overallTokens: any[], currVal: any) => {
         const normalizedText = removeSpecialCharacters(currVal).toLowerCase();
         let potentialTokenToAdd: any = {};
         if (
@@ -330,7 +344,9 @@ export class TweetEnhancer {
           overallTokens.push(potentialTokenToAdd);
         }
         return overallTokens;
-      }, []);
+      },
+      []
+    );
     return tokensInTweet;
   }
 
