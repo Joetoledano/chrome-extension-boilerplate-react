@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { tweetActions } from '../../../../lib/constants/ActionMessages';
-import ExtensionMessagingHub from '../../../../messaging/';
+import ExtensionMessagingHub from '../../../../messaging';
 
 type twitterViewType = 'tweet' | 'profile' | null;
 const useGetTweets = (twitterView: twitterViewType) => {
@@ -13,6 +13,7 @@ const useGetTweets = (twitterView: twitterViewType) => {
         const messageData = {
           action: tweetActions.loadRelevantTweets,
         };
+        console.log('message data to load tweets', messageData);
         await ExtensionMessagingHub.sendMessage(
           'background',
           null,

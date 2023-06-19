@@ -32,8 +32,8 @@ const Tweet: React.FC<TweetProps> = ({ tweet, handleFocusWallet }) => {
 
   // if there a handle or username with eth in it, get the address
   const getAddressForTweet = React.useCallback(async () => {
-    const textWithEnsAddress = [tweet.handle, tweet.username].find((el: any) =>
-      el.includes('.eth')
+    const textWithEnsAddress = [tweet.handle, tweet.username].find(
+      (el: any) => el && el.includes('.eth')
     );
 
     if (textWithEnsAddress) {
@@ -50,7 +50,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, handleFocusWallet }) => {
 
   React.useEffect(() => {
     getAddressForTweet();
-  }, [tweet, getAddressForTweet]);
+  }, []);
 
   const fetchBalanceForTweet = React.useCallback(async () => {
     if (walletAddress && walletAddress.includes('0x')) {
@@ -61,7 +61,7 @@ const Tweet: React.FC<TweetProps> = ({ tweet, handleFocusWallet }) => {
 
   React.useEffect(() => {
     fetchBalanceForTweet();
-  }, [walletAddress, fetchBalanceForTweet]);
+  }, []);
 
   const renderExtractedData = (data: ExtractedData[]): JSX.Element[] => {
     return data.map((item, index) => {

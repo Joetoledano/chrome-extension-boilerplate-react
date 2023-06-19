@@ -27,7 +27,7 @@ export function removeSpecialCharacters(str: string): string {
 export const getTwitterNameFromTweet = (tweet: HTMLElement) => {
   if (document) {
     const namesWithENS = Array.from(tweet.querySelectorAll('span')).filter(
-      (el) => el?.innerText?.includes('.eth')
+      (el) => el && el?.innerText?.includes('.eth')
     );
     // using the second instance of the ens name to preserve the upper name(risky)
     if (namesWithENS && namesWithENS.length) {

@@ -5,8 +5,7 @@ import {
   profileActions,
   tweetActions,
 } from '../../lib/constants/ActionMessages';
-import { extractEthAddress } from '../../lib/helpers';
-import ExtensionMessagingHub from '../../messaging/';
+import ExtensionMessagingHub from '../../messaging';
 import './Popup.css';
 import ActiveWallet from './components/ActiveWallet';
 import Profile from './components/Profile';
@@ -41,6 +40,7 @@ const Popup: React.FC = () => {
   const { getFormattedBalance, getWalletTokensForAddress } = useBalances();
 
   const [currentView, setCurrentView] = useState('');
+  console.log(`the twitter view`, twitterView);
   const {
     relevantTweets,
     setRelevantTweets,
@@ -53,26 +53,10 @@ const Popup: React.FC = () => {
     walletBalanceForFocusedWallet,
     setWalletBalanceForFocusedWallet,
   } = useBalanceForProfile(walletAddressForFocusedWallet, getFormattedBalance);
-  const getAddressForTweet = React.useCallback(async (tweet: any) => {
-    const textWithEnsAddress = [tweet.handle, tweet.username].find((el: any) =>
-      el.includes('.eth')
-    );
 
-    if (textWithEnsAddress) {
-      const extractedAddress = extractEthAddress(textWithEnsAddress);
-      if (extractedAddress) {
-        const addressForText = await fetchAddressForENSName(
-          extractedAddress.toLowerCase().trim()
-        );
-        return addressForText;
-      }
-    }
-    return '';
-  }, []);
   const { addBalancesAndAddressToRelevantTweets } = useBalanceForTweets(
     relevantTweets,
     setRelevantTweets,
-    getAddressForTweet,
     getFormattedBalance,
     getWalletTokensForAddress
   );
@@ -83,11 +67,6 @@ const Popup: React.FC = () => {
 
   const handleClickProfileIcon = () => {
     setCurrentView(currentView === 'profile' ? '' : 'profile');
-  };
-
-  const toggleBalances = () => {
-    setShowBalances(!showBalances);
-    // Add logic to send message to content script
   };
 
   const setTwitterViewFunc = useCallback(async () => {
@@ -176,6 +155,8 @@ const Popup: React.FC = () => {
         }
         break;
       case profileActions.setTwitterView:
+        console.log(`the data: `, data);
+
         setTwitterView(data.data.twitterView);
         break;
       case profileActions.renderProfileInfo:
@@ -239,12 +220,14 @@ const Popup: React.FC = () => {
   };
 
   useEffect(() => {
-    addBalancesAndAddressToRelevantTweets();
-  }, [relevantTweets, addBalancesAndAddressToRelevantTweets]);
+    if (!relevantTweets.find((tweet: any) => tweet.walletBalance)) {
+      addBalancesAndAddressToRelevantTweets();
+    }
+  }, [relevantTweets]);
 
   useEffect(() => {
     renderElementToTweet();
-  }, [renderElementToTweet, relevantTweets]);
+  }, [relevantTweets, twitterView]);
 
   return (
     <div className="flex relative flex-col items-center  justify-start h-screen bg-gray-800 text-white">

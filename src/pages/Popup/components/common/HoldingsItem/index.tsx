@@ -1,11 +1,12 @@
 import React from 'react';
 
 type tokenType = {
-  name: string;
+  token: any;
   symbol: string;
   image: string;
-  amount: number;
+  balance: number;
   value: number;
+  delta: any;
   performance: number;
 };
 interface HoldingsItmeProps {
@@ -18,32 +19,32 @@ const HoldingsItem: React.FC<HoldingsItmeProps> = ({ token }) => {
       <div className="flex flex-row items-center">
         <img
           className="w-8 h-8 rounded-full mr-4 border-1 border-gray-300"
-          src={token.image}
-          alt={token.name}
+          src={token.token.asset.image_url}
+          alt={token.token.asset.name}
         />
         <div className="flex flex-col">
           <span className="font-semibold text-sm text-gray-900 tracking-tighter">
-            {token.name}
+            {token.token.asset.name}
           </span>
           <span className="font-light text-xs text-gray-500 uppercase tracking-wider">
-            {token.symbol}
+            {token.token.asset.symbol}
           </span>
         </div>
       </div>
       <div className="flex flex-col items-end">
         <span className="font-semibold text-sm text-gray-900">
-          {token.amount}{' '}
+          {token.balance}{' '}
           <span className="font-light text-xs text-gray-500 uppercase">
-            {token.symbol}
+            {token.token.asset.symbol}
           </span>
         </span>
         <span className="font-light text-xs text-gray-600">${token.value}</span>
         <span
           className={`font-semibold text-xs ${
-            token.performance >= 0 ? 'text-green-500' : 'text-red-500'
+            token.delta.pct_change >= 0 ? 'text-green-500' : 'text-red-500'
           }`}
         >
-          {token.performance}%
+          {token.delta.pct_change}%
         </span>
       </div>
     </div>

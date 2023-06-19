@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchAddressForENSName } from '../../../../Client';
 import { profileActions } from '../../../../lib/constants/ActionMessages';
-import ExtensionMessagingHub from '../../../../messaging/';
+import ExtensionMessagingHub from '../../../../messaging';
 import useBalances from '../balances/useBalances';
 
 const useWallet = (initialAddress = null) => {

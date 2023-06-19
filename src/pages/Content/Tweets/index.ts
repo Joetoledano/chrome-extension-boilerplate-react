@@ -43,6 +43,7 @@ export class TweetEnhancer {
       const { action, payload } = message.data;
       switch (action) {
         case tweetActions.setTwitterView:
+          console.log('setting twitter view');
           const twitterViewResponse = {
             twitterView: 'tweet',
             messageAction: tweetActions.setTwitterView,
@@ -122,7 +123,7 @@ export class TweetEnhancer {
       const userNameSection =
         this.getTwitterProfileElementsToRenderBoxOn(tweet);
       const hasEnsText = userNameSection.some((element: HTMLElement) => {
-        return element.innerText.includes('.eth');
+        return element && element.innerText.includes('.eth');
       });
       return hasEnsText;
     });
@@ -357,8 +358,6 @@ export class TweetEnhancer {
       'messageToContentScript',
       this.handleMessageFromPopup
     );
-
-    console.log('cheeese');
   }
 
   private addBalancesDataToTweets(tweets: any[], extractedTweets: any[]) {

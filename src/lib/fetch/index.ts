@@ -6,7 +6,7 @@ const Transport = {
       const res = await fetch(apiPath, {
         ...opts,
         headers: {
-          Authorization: `Token ${secrets.OPENPOOL_API_KEY}`,
+          'X-API-KEY': `${secrets.OPENPOOL_API_KEY}`,
           ...(opts.headers || {}),
         },
       });

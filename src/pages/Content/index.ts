@@ -9,6 +9,8 @@ import { TweetEnhancer } from './Tweets';
         window.location.href.includes('twitter') &&
         !document.body.classList.contains('enhanced')
       ) {
+        console.log('the location', window.location.href);
+
         if (
           window.location.href.includes('twitter.com/home') ||
           window.location.href.includes('twitter.com/search')

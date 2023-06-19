@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { profileActions } from '../../../../lib/constants/ActionMessages';
-import { DATA_CENTER_API_USER_ENDPOINT } from '../../../../lib/constants/OPEndpoints';
+import { OP_BALANCES_ENDPOINT } from '../../../../lib/constants/OPEndpoints';
 import Transport from '../../../../lib/fetch';
-import ExtensionMessagingHub from '../../../../messaging/';
+import ExtensionMessagingHub from '../../../../messaging';
 const useBalanceForProfile = (
   walletAddressForFocusedWallet: string | null,
-  getFormattedBalance: any
+  getFormattedBalance = null
 ) => {
   const [walletBalanceForFocusedWallet, setWalletBalanceForFocusedWallet] =
     useState<number | null>(null);
@@ -14,7 +14,8 @@ const useBalanceForProfile = (
   const fetchProfileBalance = useCallback(async () => {
     if (
       walletAddressForFocusedWallet?.includes('0x') &&
-      walletBalanceForFocusedWallet === null
+      walletBalanceForFocusedWallet === null &&
+      getFormattedBalance !== null
     ) {
       try {
         const walletBalanceResult = await getFormattedBalance(
@@ -51,7 +52,7 @@ const useBalanceForProfile = (
 
   const buildWalletBalanceQuery = useCallback(() => {
     if (walletAddressForFocusedWallet) {
-      return `${DATA_CENTER_API_USER_ENDPOINT}/balance/?wallet__address__in=${walletAddressForFocusedWallet}`;
+      return `${OP_BALANCES_ENDPOINT}?wallet=${walletAddressForFocusedWallet}`;
     }
     return null;
   }, [walletAddressForFocusedWallet]);
@@ -80,9 +81,8 @@ const useBalanceForProfile = (
   }, [responseForWalletTokensForFocusedWallet]);
   const tokenAllocationForProfile = useMemo(() => {
     return responseForWalletTokensForFocusedWallet &&
-      responseForWalletTokensForFocusedWallet.summary &&
-      responseForWalletTokensForFocusedWallet.summary.allocation
-      ? responseForWalletTokensForFocusedWallet.summary.allocation
+      responseForWalletTokensForFocusedWallet.data
+      ? responseForWalletTokensForFocusedWallet.data
       : [];
   }, [responseForWalletTokensForFocusedWallet]);
 

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { DATA_CENTER_API_USER_ENDPOINT } from '../../../../lib/constants/OPEndpoints';
+import { OP_MANAGE_WALLETS_ENDPOINT } from '../../../../lib/constants/OPEndpoints';
 import Transport from '../../../../lib/fetch';
 
 interface RegisterWalletResponse {
@@ -16,7 +16,7 @@ interface RegisterWalletResponse {
 const useRegisterWallet = (): {
   handleRegisterWalletInBackend: (
     walletAddress: string
-  ) => Promise<RegisterWalletResponse | RegisterWalletResponse[]>;
+  ) => Promise<RegisterWalletResponse>;
   registeringWallet: boolean;
   errorRegisteringWallet: boolean;
   availableRegistrationsRemaining: number;
@@ -45,15 +45,13 @@ const useRegisterWallet = (): {
 
       setRegisteringWallet(true);
       setErrorRegisteringWallet(false);
-      const formattedAddressInCaseOfMultipleAddresses = walletAddress
-        .split(',')
-        .map((address) => address.trim());
+      const formattedAddressInCaseOfMultipleAddresses = walletAddress;
 
       try {
         const responseFromCreatingWallet = await Transport.sendJSON(
-          `${DATA_CENTER_API_USER_ENDPOINT}/wallet/`,
+          OP_MANAGE_WALLETS_ENDPOINT,
           {
-            body: { addresses: [...formattedAddressInCaseOfMultipleAddresses] },
+            body: { address: formattedAddressInCaseOfMultipleAddresses },
           }
         );
         if (!responseFromCreatingWallet) {
@@ -64,8 +62,7 @@ const useRegisterWallet = (): {
           setErrorRegisteringWallet(false);
           return responseFromCreatingWallet.results;
         } else {
-          const singleWalletResponseObject =
-            responseFromCreatingWallet.results[0];
+          const singleWalletResponseObject = responseFromCreatingWallet.results;
           const hasError = await singleWalletResponseObject.is_error;
           const walletId = await singleWalletResponseObject.id;
           const isLoaded = await singleWalletResponseObject.is_loaded;

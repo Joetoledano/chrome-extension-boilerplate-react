@@ -11,7 +11,7 @@ type addressType = `0x${string}`;
 export async function fetchAddressForENSName(
   ensName: string
 ): Promise<addressType | null> {
-  if (ensName) {
+  if (ensName && ensName.includes('.eth')) {
     try {
       const ensAddress = await publicClient.getEnsAddress({ name: ensName });
       return ensAddress;

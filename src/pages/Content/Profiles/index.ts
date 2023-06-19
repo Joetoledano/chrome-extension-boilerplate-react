@@ -80,7 +80,7 @@ export class TwitterProfileEnhancer {
 
   private getProfileElement(): HTMLElement | null {
     const namesWithENS = Array.from(document.querySelectorAll('span')).filter(
-      (el) => el?.innerText?.includes('.eth')
+      (el) => el && el?.innerText?.includes('.eth')
     );
 
     if (namesWithENS && namesWithENS.length) {
@@ -153,7 +153,8 @@ export class TwitterProfileEnhancer {
         const twitterProfileAddBalancesHelper = new AddBalancesToElement(
           walletAddressForProfile,
           balanceForProfile,
-          this.twitterElementToRenderBoxOn
+          this.twitterElementToRenderBoxOn,
+          'profile'
         );
 
         if (twitterProfileAddBalancesHelper) {
